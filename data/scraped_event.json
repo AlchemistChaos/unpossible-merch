@@ -1,0 +1,50 @@
+{
+  "name": "Unpossible Ralphathon",
+  "description": "Ralphthon @SF \u2705 Hack Guide: https://ralphthon.team-attention.com/guide If you want to touch your laptop, you put on a lobster costume first. \ud83e\udd9e While your AI agent codes, you meet the builders who are shaping what comes next. This isn't just a hackathon. It's your entry point into a top-tier network of agent-native engineers",
+  "date": "Monday 30 March 12:30 - 31 Mar, 13:30",
+  "location": "Register to See Address",
+  "sponsors": [
+    "OpenAI",
+    "Naver D2SF",
+    "Hanriver Partners",
+    "Kakao Ventures",
+    "Bass Ventures",
+    "Weights & Biases"
+  ],
+  "speakers": [
+    "Geoffrey Huntley: Creator of Ralph Loop",
+    "Romain Huet: Head of Developer Experience @OpenAI, working on Codex",
+    "Mo Tiwari : ex @OpenAI, Stanford CS PhD",
+    "Jaegyu Lee: Winner of 1st Ralphthon, Maintainer of ouroboros"
+  ],
+  "judges": [
+    "Q \u2014 Maintainer of oh-my-opencode(40K \u2b50)",
+    "Yeachan Heo (bellman) \u2014 Maintainer of oh-my-claude-code(11K \u2b50) & oh-my-codex",
+    "Yujong Lee - Co Founder of char.com YC S25 (8K \u2b50)",
+    "John Jeong - CEO of char.com YC S25 (8K \u2b50)",
+    "Chanhee Lee - Co Founder of Aside, YC F25",
+    "CJ Na - Co Founder & CTO of Carvis, ex) Cruise",
+    "Jay Warida - Co Founder & CEO of Carvis",
+    "Mantra Patel - Engineer at Stack Auth (YC S24)",
+    "Justin Shin - Kakao Ventures",
+    "Sheshansh Agrawal - Research Lead @ Contextual AI",
+    "George Zhang - Maintainer of OpenClaw & Pi",
+    "Austin Wang - Founder & CEO, Manaflow (YC S24) & cmux.com (11k stars)",
+    "Ben Kim - Nitrode (YC W25)",
+    "Shriank K. - Co-Founder @ Seed Labs"
+  ],
+  "attendee_types": [
+    "hackers",
+    "speakers",
+    "judges",
+    "sponsors"
+  ],
+  "source_url": "https://luma.com/hh5k4ahp",
+  "tags": [
+    "hackathon",
+    "AI agents",
+    "autonomous",
+    "Ralph Loop",
+    "lobster costume"
+  ]
+}

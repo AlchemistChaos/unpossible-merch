@@ -5,6 +5,8 @@ Started: 2026-03-28
 - Always `source venv/bin/activate` before running Python commands
 - Use `from app.config import ...` to access env vars
 - Python 3.9 is installed (not 3.10+), generates FutureWarning from google-auth — safe to ignore
+- playwright-cli eval returns JSON-escaped string wrapped in markdown code blocks — use `_clean_eval_output()` to parse
+- Scrape fallback: if playwright fails, load from `data/events.json`
 
 ---
 
@@ -16,4 +18,17 @@ Started: 2026-03-28
 - **Learnings:**
   - Python is 3.9, not 3.10+ — some deprecation warnings but everything works
   - playwright-cli is globally installed and working
+---
+
+## 2026-03-28 - US-002
+- Created `app/scrape_event.py` with `scrape_event(event_url)` function
+- Uses playwright-cli subprocess: open → eval (innerText) → close
+- Parses page text into EventData dict: name, description, date, location, sponsors, speakers, judges, attendee_types
+- Saves output to `data/scraped_event.json`, falls back to `data/events.json` on failure
+- Files changed: `app/scrape_event.py`, `data/scraped_event.json`
+- **Learnings:**
+  - playwright-cli eval output is JSON-escaped, wrapped in markdown code blocks — needs cleaning
+  - Page text has zero-width spaces (`\u200b`) and non-breaking spaces (`\u00a0`) — must strip
+  - Date format on Luma: "Monday 30 March 12:30 - 31 Mar, 13:30" (weekday first, no "AM/PM" always)
+  - Location may be hidden ("Register to See Address") for private events
 ---

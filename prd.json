@@ -32,7 +32,7 @@
         "Test: python -c 'from app.scrape_event import scrape_event; print(scrape_event(\"https://luma.com/hh5k4ahp\"))'"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "Use playwright-cli CLI commands via subprocess. Key commands: playwright-cli open <url>, playwright-cli snapshot, playwright-cli eval <js>. The event page is public so no login needed for scraping. Login creds in .env are for co-host features only (not needed for this task)."
     },
     {
