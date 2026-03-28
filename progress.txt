@@ -10,6 +10,10 @@ Started: 2026-03-28
 - Qwen3 LLM output: strip `<think>` tags and markdown code blocks before JSON parsing
 - W&B Inference client: `OpenAI(base_url='https://api.inference.wandb.ai/v1', api_key=WANDB_API_KEY)`
 - Pipeline checkpoint pattern: `_run_stage(checkpoint, fn, label)` — load JSON if exists, else run and save
+- playwright-cli `snapshot` returns YAML file path, NOT inline content — must read the .yml file to get element refs
+- Fourthwall login URL: `https://{shop_domain}.fourthwall.com/admin/dashboard` → redirects to auth.fourthwall.com
+- Fourthwall product creation flow: template page → "Design now" → upload image → click thumbnail → "Next" → fill name/price → "Publish now"
+- Fourthwall shop domain can be fetched via GET /open-api/v1.0/shops/current → `domain` field
 
 ---
 
@@ -86,4 +90,21 @@ Started: 2026-03-28
 - **Learnings:**
   - Checkpoint recovery works well for long pipelines with API calls
   - `shutil.rmtree` for `--clean` is simpler than iterating files
+---
+
+## 2026-03-28 - US-006
+- Created `app/fourthwall.py` with `upload_designs(selected_briefs, image_results)` function
+- Uses playwright-cli browser automation to log in, create products, and publish
+- Flow: login → navigate product template → "Design now" → upload PNG → place on design → "Next" → fill name/price → "Publish now"
+- Gets shop domain from Fourthwall API for constructing URLs
+- Reads YAML snapshot files (not raw output) for element ref discovery
+- API verification via GET /open-api/v1.0/products confirms product creation
+- Successfully created 4 products, verified via API (5 total including manual test)
+- Files changed: `app/fourthwall.py`, `app/pipeline.py` (already had stage 5), `prd.json`, `progress.txt`
+- **Learnings:**
+  - `fourthwall.com/login` returns 404 — login goes through `auth.fourthwall.com` via shop admin URL
+  - playwright-cli `snapshot` output is just a header with a YAML file reference — must read the .yml file to get element refs
+  - playwright-cli `upload` requires a file chooser to be open — click "Upload image" first, then `upload <path>`
+  - Fourthwall product creation is a multi-step wizard: template → design editor → product details → publish
+  - Product template URL: `/admin/products/gildan-heavyweight-t-shirt-dtg` (cheapest t-shirt option at $9.50)
 ---

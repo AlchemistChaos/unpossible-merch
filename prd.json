@@ -99,7 +99,7 @@
         "Test: successfully create at least 1 product on Fourthwall"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": "Fourthwall Open API is read-only for products (list/get only). Product creation must use browser automation via playwright-cli. Log in at fourthwall.com, use the product designer UI. Fourthwall API creds (FOURTHWALL_API_USERNAME, FOURTHWALL_API_PASSWORD) can be used to verify products were created via GET /open-api/v1.0/products."
     },
     {
@@ -186,6 +186,26 @@
       "priority": 11,
       "passes": false,
       "notes": "This is polish for demo. Keep it simple. The --mock and --skip-blast flags are important for testing without side effects."
+    },
+    {
+      "id": "US-012",
+      "title": "End-to-end verification and fix broken stages",
+      "description": "Run the full pipeline end-to-end with `python run.py`. If any stage fails, diagnose the root cause, fix it, and re-run from that stage using checkpoints. Repeat until all 7 stages complete successfully — scraping, briefs, critique, images, Fourthwall upload, storefront, and Luma blast.",
+      "acceptanceCriteria": [
+        "Run `python run.py` and capture output",
+        "If a stage fails: read the error, fix the code, clear that stage's checkpoint, re-run",
+        "All 7 stages complete without errors",
+        "6 PNG images exist in output/ directory",
+        "All checkpoint files (01 through 07) are written correctly",
+        "Products are visible via Fourthwall API: GET /open-api/v1.0/products returns created products",
+        "Storefront URL is accessible and shows products",
+        "Luma blast is sent successfully to attendees",
+        "Pipeline summary prints at end showing all stages completed",
+        "No Python tracebacks in final successful run"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": "This is the integration test story. Test everything — including the blast. Work backwards from failures. If stage 4 (images) fails, don't re-run stages 1-3 — use the checkpoint system. Fix the broken stage, delete its checkpoint, and re-run. The goal is a clean end-to-end run of the entire pipeline."
     }
   ]
 }
