@@ -1,0 +1,5 @@
+google-genai
+openai
+weave
+wandb
+python-dotenv

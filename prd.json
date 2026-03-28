@@ -1,0 +1,138 @@
+{
+  "project": "UnpossibleMerch",
+  "branchName": "ralph/tshirt-gen",
+  "description": "AI agent that scrapes Luma event data via playwright-cli, generates design briefs, self-critiques, and creates t-shirt designs using Gemini image generation. CLI-based, with Weave observability.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Set up Python project and install dependencies",
+      "description": "Initialize the Python project with a virtual environment and install all required packages.",
+      "acceptanceCriteria": [
+        "Create a virtual environment (venv) if not present",
+        "Install packages from requirements.txt: google-genai, openai, weave, wandb, python-dotenv",
+        "Create app/__init__.py to make it a package",
+        "Verify imports work by running: python -c 'import google.genai; import weave; print(\"OK\")'",
+        "Create app/config.py that loads .env file using python-dotenv and exports config values",
+        "Verify playwright-cli is available: playwright-cli --version"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": "Use .env for all keys. See .env.example for reference. playwright-cli is already installed globally."
+    },
+    {
+      "id": "US-002",
+      "title": "Scrape Luma event data using playwright-cli",
+      "description": "Use playwright-cli to navigate to the Luma event page and extract event details into a JSON file.",
+      "acceptanceCriteria": [
+        "Create app/scrape_event.py with a scrape_event(event_url) function",
+        "Use subprocess to call playwright-cli commands: open the event URL, take a snapshot, extract text",
+        "Parse the extracted page content to build an EventData dict with: name, description, date, location, sponsors, attendee_types",
+        "Save scraped data to data/scraped_event.json",
+        "Also keep data/events.json as fallback mock data if scraping fails",
+        "Test: python -c 'from app.scrape_event import scrape_event; print(scrape_event(\"https://luma.com/hh5k4ahp\"))'"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": "Use playwright-cli CLI commands via subprocess. Key commands: playwright-cli open <url>, playwright-cli snapshot, playwright-cli eval <js>. The event page is public so no login needed for scraping. Login creds in .env are for co-host features only (not needed for this task)."
+    },
+    {
+      "id": "US-003",
+      "title": "Generate 10 design briefs from event data",
+      "description": "Use LLM to analyze event data and generate 10 t-shirt design concepts across 3 categories.",
+      "acceptanceCriteria": [
+        "Create app/briefs.py with generate_briefs(event_data) function",
+        "Use W&B Inference API (OpenAI client) to generate 10 design briefs",
+        "Each brief has: id, title, category (crisp-simple/funny-meme/sponsor-logo), description, slogans list, color_notes",
+        "Distribution: 4 crisp-simple, 4 funny-meme, 2 sponsor-logo",
+        "Briefs reference event-specific humor (lobster costume rule, Ralph Wiggum origin, autonomous agents theme)",
+        "Return list of 10 brief dicts",
+        "Test with scraped or mock event data"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": "Use model 'OpenPipe/Qwen3-14B-Instruct' via W&B Inference. Prompt should ask for JSON output. Sponsor names as text only (no logos). All designs black and white."
+    },
+    {
+      "id": "US-004",
+      "title": "Self-critique briefs and narrow to 6",
+      "description": "Use LLM to evaluate the 10 briefs and select the best 6 with critique notes.",
+      "acceptanceCriteria": [
+        "Create app/critique.py with critique_briefs(briefs) function",
+        "Use W&B Inference API to evaluate briefs against: printability, relevance, variety, humor/appeal",
+        "Return the top 6 briefs with a critique_notes field added to each",
+        "Target distribution in final 6: ~2 crisp, ~2 funny, ~2 sponsor (quality over quota)",
+        "Test: python -c 'from app.critique import critique_briefs; ...'"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": "This is the self-critique loop from the design doc. Feed all 10 briefs to the LLM and ask it to rank and select 6."
+    },
+    {
+      "id": "US-005",
+      "title": "Generate t-shirt design images with Gemini",
+      "description": "Use Gemini image generation to create 6 t-shirt graphics from the selected briefs.",
+      "acceptanceCriteria": [
+        "Create app/design.py with generate_design(brief) function",
+        "Use google-genai library with model 'gemini-3.1-flash-image-preview'",
+        "Generate black and white t-shirt graphic for each brief",
+        "Prompt emphasizes: high contrast, clean lines, print-ready, white background, centered",
+        "Save images to output/ directory as PNG with descriptive filenames",
+        "Sequential generation with 2-second delay between calls",
+        "Retry up to 2 times on API error",
+        "Test: generate at least 1 design successfully"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "Use types.GenerateContentConfig(response_modalities=['TEXT', 'IMAGE']). See CLAUDE.md for exact code pattern. Accept whatever Gemini produces if API call succeeds."
+    },
+    {
+      "id": "US-006",
+      "title": "Build end-to-end CLI pipeline with checkpoints",
+      "description": "Create a main orchestrator that runs all stages sequentially with checkpoint recovery.",
+      "acceptanceCriteria": [
+        "Create app/pipeline.py with run_pipeline() function",
+        "Stages: scrape event -> generate briefs -> critique to 6 -> generate images",
+        "Add checkpoint system: each stage saves to checkpoints/ dir as JSON",
+        "On restart, skip completed stages by checking checkpoints",
+        "Print progress to stdout (which stage, which step)",
+        "Save final results summary to output/results.json",
+        "Create run.py at project root that calls run_pipeline()",
+        "Test: python run.py"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": "Checkpoint files: checkpoints/01-event-data.json, 02-briefs.json, 03-selected-briefs.json, 04-images.json. Add --clean flag to clear checkpoints."
+    },
+    {
+      "id": "US-007",
+      "title": "Add Weave tracing to all pipeline functions",
+      "description": "Instrument the pipeline with W&B Weave for full observability.",
+      "acceptanceCriteria": [
+        "Add weave.init('saikolapudi-aws/tshirt-gen') at pipeline startup",
+        "Decorate key functions with @weave.op: run_pipeline, scrape_event, generate_briefs, critique_briefs, generate_design",
+        "Add weave.attributes context for session_id and event_name",
+        "Verify traces appear in Weave UI after a test run",
+        "Do NOT break existing functionality"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": "See docs/w&b.md for Weave integration guide. Use @weave.op decorator pattern."
+    },
+    {
+      "id": "US-008",
+      "title": "Error handling, polish, and demo script",
+      "description": "Add graceful error handling and a demo run script.",
+      "acceptanceCriteria": [
+        "Wrap each pipeline stage in try/except with clear error messages",
+        "If image generation fails for one brief, continue to next",
+        "Add --event-url flag to run.py for custom event URL",
+        "Add --mock flag to use data/events.json instead of scraping",
+        "Print summary at end: stages completed, designs generated, errors",
+        "Test: python run.py --mock"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": "This is polish for demo. Keep it simple. The --mock flag is important for testing without hitting Luma."
+    }
+  ]
+}

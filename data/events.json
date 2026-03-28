@@ -1,0 +1,37 @@
+[
+  {
+    "name": "Ralphthon SF 2026",
+    "description": "Autonomous agent hackathon at the W&B Office in San Francisco. Teams write specs, then agents build autonomously while humans wear lobster costumes if they touch their laptops. Features the Ralph Loop by Geoffrey Huntley, speakers include Romain Huet (OpenAI Head of DevEx) and Mo Tiwari (ex-OpenAI). Problem statements: Codex-Powered Services, Humanless Services for AI Agents, and AI Applications. Judged on live demo (35%), creativity (25%), impact (20%), and lobster count (20%). WiFi password is 'Gumption'. Cross-city event with Ralphthon Seoul.",
+    "date": "2026-03-28",
+    "location": "W&B Office, 400 Alabama St, San Francisco, CA 94110",
+    "tags": ["hackathon", "AI agents", "autonomous", "Ralph Loop", "lobster costume", "W&B", "OpenAI Codex", "Claude Code"]
+  },
+  {
+    "name": "LLM Roast Battle",
+    "description": "Watch top language models trash-talk each other in real-time. GPT vs Claude vs Gemini in the ultimate prompt showdown. Judges are humans (for now). Previous highlights include Claude apologizing mid-roast and GPT hallucinating a victory it never had. Audience members may be asked to serve as guardrails.",
+    "date": "2026-04-15",
+    "location": "Austin, TX",
+    "tags": ["LLMs", "comedy", "competition", "AI drama"]
+  },
+  {
+    "name": "Vibe Coding Summit",
+    "description": "The conference for developers who code by vibes, not specs. Sessions include 'Why Read Docs When You Have Autocomplete', 'Ship It And See What Happens', and the keynote 'I Don't Know What This Code Does But It Works'. Dress code: hoodies only. No tests required (or wanted).",
+    "date": "2026-05-10",
+    "location": "Portland, OR",
+    "tags": ["vibe coding", "developer culture", "no tests", "YOLO deployment"]
+  },
+  {
+    "name": "Prompt Engineering Olympics",
+    "description": "Competitive prompt engineering at its finest. Events include the 100-token sprint, the chain-of-thought marathon, and freestyle jailbreaking (ethical division only). Gold medalists receive a mass of tokens and the title 'Prompt Whisperer'. Warning: system prompts may be leaked during competition.",
+    "date": "2026-06-01",
+    "location": "Seattle, WA",
+    "tags": ["prompt engineering", "competition", "tokens", "AI Olympics"]
+  },
+  {
+    "name": "404: Sleep Not Found - AI Devcon",
+    "description": "A 48-hour developer conference that nobody actually sleeps through. Tracks include 'Deploying Models at 3AM', 'Why Is My GPU On Fire', and 'The Art of Blaming the Training Data'. Free energy drinks sponsored by every cloud provider simultaneously. WiFi password is 'itworkslocally'.",
+    "date": "2026-07-20",
+    "location": "New York, NY",
+    "tags": ["developer conference", "AI", "sleep deprivation", "GPU", "cloud"]
+  }
+]

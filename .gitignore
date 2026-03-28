@@ -1,0 +1,9 @@
+venv/
+__pycache__/
+*.pyc
+.env
+output/
+checkpoints/
+.DS_Store
+.playwright-cli/
+node_modules/
