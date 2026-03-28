@@ -82,7 +82,7 @@
         "Test: generate at least 1 design successfully"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "Use types.GenerateContentConfig(response_modalities=['TEXT', 'IMAGE']). See CLAUDE.md for exact code pattern. Accept whatever Gemini produces if API call succeeds."
     },
     {

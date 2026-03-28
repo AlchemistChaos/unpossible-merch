@@ -60,3 +60,16 @@ Started: 2026-03-28
   - LLM generally respects "select 6" instruction but safety net for count adjustment is useful
   - Category distribution in final 6 is quality-driven, not strictly enforced
 ---
+
+## 2026-03-28 - US-005
+- Created `app/design.py` with `generate_design(brief)` and `generate_all_designs(briefs)` functions
+- Uses google-genai with `gemini-3.1-flash-image-preview` model
+- Prompt emphasizes: black & white, high contrast, clean lines, print-ready, white background, centered
+- Saves PNGs to `output/` as `{brief_id}-{category}.png`
+- 2-second delay between calls, retry up to 2 times on API error
+- Files changed: `app/design.py`, `prd.json`, `progress.txt`
+- **Learnings:**
+  - Gemini image gen works reliably with `response_modalities=['TEXT', 'IMAGE']`
+  - `part.as_image()` returns a PIL Image that can be saved directly
+  - FutureWarning from google-auth on Python 3.9 is harmless
+---
