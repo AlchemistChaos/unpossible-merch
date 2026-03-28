@@ -3,6 +3,7 @@ import os
 import time
 
 import requests
+import weave
 
 from app.config import (
     FOURTHWALL_API_USERNAME,
@@ -18,6 +19,7 @@ from app.fourthwall import (
 )
 
 
+@weave.op()
 def setup_storefront(event_data, fourthwall_results=None):
     """Configure Fourthwall storefront with event branding.
 

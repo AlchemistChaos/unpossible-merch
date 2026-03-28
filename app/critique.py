@@ -1,9 +1,12 @@
 import json
+
+import weave
 from openai import OpenAI
 
 from app.config import WANDB_API_KEY
 
 
+@weave.op()
 def critique_briefs(briefs):
     """Evaluate 10 briefs and select the best 6 with critique notes."""
     client = OpenAI(

@@ -5,6 +5,7 @@ import subprocess
 import time
 
 import requests
+import weave
 
 from app.config import (
     FOURTHWALL_API_USERNAME,
@@ -17,6 +18,7 @@ from app.config import (
 PRODUCT_TEMPLATE = "gildan-heavyweight-t-shirt-dtg"
 
 
+@weave.op()
 def upload_designs(selected_briefs, image_results):
     """Upload designs to Fourthwall and create t-shirt products via browser automation.
 

@@ -3,9 +3,12 @@ import os
 import subprocess
 import time
 
+import weave
+
 from app.config import LUMA_EVENT_URL
 
 
+@weave.op()
 def scrape_event(event_url=None):
     """Scrape event data from a Luma event page using playwright-cli."""
     url = event_url or LUMA_EVENT_URL

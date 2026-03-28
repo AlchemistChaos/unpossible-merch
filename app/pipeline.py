@@ -1,7 +1,10 @@
 import json
 import os
 import shutil
+import uuid
 from datetime import datetime
+
+import weave
 
 from app.scrape_event import scrape_event
 from app.briefs import generate_briefs
@@ -17,6 +20,7 @@ CHECKPOINTS_DIR = "checkpoints"
 OUTPUT_DIR = "output"
 
 
+@weave.op()
 def run_pipeline(event_url=None, clean=False):
     """Run the full t-shirt design pipeline with checkpoint recovery."""
     if clean:
@@ -26,6 +30,7 @@ def run_pipeline(event_url=None, clean=False):
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     url = event_url or LUMA_EVENT_URL
+    session_id = str(uuid.uuid4())[:8]
 
     # Stage 1: Scrape event data
     print("=" * 50)
@@ -37,6 +42,15 @@ def run_pipeline(event_url=None, clean=False):
         label="event scraping",
     )
 
+    event_name = event_data.get("name", "Unknown")
+    print(f"  Session: {session_id} | Event: {event_name}")
+
+    with weave.attributes({"session_id": session_id, "event_name": event_name, "event_url": url}):
+        return _run_remaining_stages(url, event_data, event_name)
+
+
+def _run_remaining_stages(url, event_data, event_name):
+    """Run stages 2-7 inside weave.attributes context."""
     # Stage 2: Generate 10 briefs
     print("\n" + "=" * 50)
     print("STAGE 2: Generate 10 Design Briefs")

@@ -4,10 +4,13 @@ import re
 import subprocess
 import time
 
+import weave
+
 from app.config import PLATFORM_EMAIL, PLATFORM_PASSWORD, LUMA_EVENT_URL
 from app.fourthwall import _pw, _snapshot, _find_ref, _find_all_refs, _current_url
 
 
+@weave.op()
 def send_blast(event_url, storefront_url):
     """Send a Luma blast to all event attendees with the merch store link.
 

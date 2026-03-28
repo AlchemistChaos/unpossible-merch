@@ -1,12 +1,15 @@
 import os
 import time
 import json
+
+import weave
 from google import genai
 from google.genai import types
 
 from app.config import GOOGLE_API_KEY
 
 
+@weave.op()
 def generate_design(brief):
     """Generate a t-shirt design image from a brief using Gemini."""
     client = genai.Client(api_key=GOOGLE_API_KEY)

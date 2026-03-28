@@ -166,7 +166,7 @@
         "Do NOT break existing functionality"
       ],
       "priority": 10,
-      "passes": false,
+      "passes": true,
       "notes": "See docs/w&b.md for Weave integration guide. Use @weave.op decorator pattern."
     },
     {

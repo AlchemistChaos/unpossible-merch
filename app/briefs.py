@@ -1,9 +1,12 @@
 import json
+
+import weave
 from openai import OpenAI
 
 from app.config import WANDB_API_KEY
 
 
+@weave.op()
 def generate_briefs(event_data):
     """Generate 10 t-shirt design briefs from event data using W&B Inference API."""
     client = OpenAI(

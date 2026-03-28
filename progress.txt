@@ -158,3 +158,16 @@ Started: 2026-03-28
   - Checkpoints 05-07 not saved to disk because those stages were run directly, not via pipeline
   - US-012 (end-to-end verification) is the proper integration test for all stages
 ---
+
+## 2026-03-28 - US-010
+- Added Weave tracing (`@weave.op()`) to all 8 key pipeline functions
+- `weave.init('saikolapudi-aws/tshirt-gen')` called in `run.py` before pipeline starts
+- `weave.attributes` context in `run_pipeline` with session_id, event_name, event_url
+- Decorated functions: run_pipeline, scrape_event, generate_briefs, critique_briefs, generate_design, upload_designs, setup_storefront, send_blast
+- Verified: weave login works, all imports pass, traces visible at wandb.ai/saikolapudi-aws/tshirt-gen/weave
+- Files changed: `run.py`, `app/pipeline.py`, `app/scrape_event.py`, `app/briefs.py`, `app/critique.py`, `app/design.py`, `app/fourthwall.py`, `app/storefront.py`, `app/luma_blast.py`, `prd.json`
+- **Learnings:**
+  - `weave.init` must be called before any `@weave.op` decorated function is invoked
+  - `load_dotenv()` in config.py makes WANDB_API_KEY available for weave.init via import chain
+  - Weave autopatches OpenAI client calls — no extra work needed for W&B Inference tracing
+---
