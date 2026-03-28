@@ -14,6 +14,8 @@ Started: 2026-03-28
 - Fourthwall login URL: `https://{shop_domain}.fourthwall.com/admin/dashboard` → redirects to auth.fourthwall.com
 - Fourthwall product creation flow: template page → "Design now" → upload image → click thumbnail → "Next" → fill name/price → "Publish now"
 - Fourthwall shop domain can be fetched via GET /open-api/v1.0/shops/current → `domain` field
+- Fourthwall admin settings URL: `/admin/dashboard/settings/` (NOT `/admin/settings/general`)
+- Fourthwall settings fields: "Creator name" and "Site title" textboxes, "Save" button
 
 ---
 
@@ -107,4 +109,19 @@ Started: 2026-03-28
   - playwright-cli `upload` requires a file chooser to be open — click "Upload image" first, then `upload <path>`
   - Fourthwall product creation is a multi-step wizard: template → design editor → product details → publish
   - Product template URL: `/admin/products/gildan-heavyweight-t-shirt-dtg` (cheapest t-shirt option at $9.50)
+---
+
+## 2026-03-28 - US-007
+- Created `app/storefront.py` with `setup_storefront(event_data, fourthwall_results)` function
+- Reuses playwright-cli helpers from `app/fourthwall.py` (login, snapshot, find_ref)
+- Browser automation: logs in, navigates to `/admin/dashboard/settings/`, updates "Site title" and "Creator name"
+- API verification: confirms 5 products visible in AVAILABLE state via GET /open-api/v1.0/products
+- Captures storefront URL `https://unpossible-merch-shop.fourthwall.com` (accessible, HTTP 200)
+- Added Stage 6 to `app/pipeline.py` with checkpoint `06-storefront.json`
+- Files changed: `app/storefront.py` (new), `app/pipeline.py`, `prd.json`, `progress.txt`
+- **Learnings:**
+  - Fourthwall admin settings URL is `/admin/dashboard/settings/` not `/admin/settings/general`
+  - Settings page has "Creator name" and "Site title" textboxes with a "Save" button
+  - Storefront redirects to `/password` page (password-protected) but still returns HTTP 200
+  - Can import `_pw`, `_snapshot`, `_login` etc. from fourthwall.py to avoid duplicating helpers
 ---

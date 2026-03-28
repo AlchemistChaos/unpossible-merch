@@ -7,6 +7,8 @@ from app.scrape_event import scrape_event
 from app.briefs import generate_briefs
 from app.critique import critique_briefs
 from app.design import generate_all_designs
+from app.fourthwall import upload_designs
+from app.storefront import setup_storefront
 from app.config import LUMA_EVENT_URL
 
 
@@ -64,6 +66,26 @@ def run_pipeline(event_url=None, clean=False):
         label="image generation",
     )
 
+    # Stage 5: Upload to Fourthwall
+    print("\n" + "=" * 50)
+    print("STAGE 5: Upload Designs to Fourthwall")
+    print("=" * 50)
+    fourthwall = _run_stage(
+        checkpoint="05-fourthwall-products.json",
+        fn=lambda: upload_designs(selected, images),
+        label="Fourthwall upload",
+    )
+
+    # Stage 6: Configure storefront
+    print("\n" + "=" * 50)
+    print("STAGE 6: Configure Fourthwall Storefront")
+    print("=" * 50)
+    storefront = _run_stage(
+        checkpoint="06-storefront.json",
+        fn=lambda: setup_storefront(event_data, fourthwall),
+        label="storefront setup",
+    )
+
     # Save results summary
     results = {
         "timestamp": datetime.now().isoformat(),
@@ -74,6 +96,10 @@ def run_pipeline(event_url=None, clean=False):
         "images_generated": sum(1 for img in images if img.get("status") == "success"),
         "images_failed": sum(1 for img in images if img.get("status") != "success"),
         "image_results": images,
+        "fourthwall_products": fourthwall.get("successful", 0),
+        "fourthwall_failed": fourthwall.get("failed", 0),
+        "storefront_url": storefront.get("storefront_url", ""),
+        "storefront_accessible": storefront.get("storefront_accessible", {}).get("status", "unknown"),
     }
     results_path = os.path.join(OUTPUT_DIR, "results.json")
     with open(results_path, "w") as f:
@@ -88,6 +114,10 @@ def run_pipeline(event_url=None, clean=False):
     print(f"Briefs selected: {results['briefs_selected']}")
     print(f"Images generated: {results['images_generated']}")
     print(f"Images failed: {results['images_failed']}")
+    print(f"Fourthwall products: {results['fourthwall_products']}")
+    print(f"Fourthwall failed: {results['fourthwall_failed']}")
+    print(f"Storefront URL: {results['storefront_url']}")
+    print(f"Storefront accessible: {results['storefront_accessible']}")
     print(f"Results saved to: {results_path}")
 
     return results

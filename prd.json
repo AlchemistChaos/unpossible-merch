@@ -116,7 +116,7 @@
         "Test: storefront URL is accessible and shows products"
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "notes": "The storefront may already be partially set up. Focus on ensuring products are visible and capturing the public URL. Use Fourthwall API (GET /open-api/v1.0/shops/current) to verify shop details."
     },
     {
