@@ -100,7 +100,7 @@
         "Test: python run.py"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": "Checkpoint files: checkpoints/01-event-data.json, 02-briefs.json, 03-selected-briefs.json, 04-images.json. Add --clean flag to clear checkpoints."
     },
     {

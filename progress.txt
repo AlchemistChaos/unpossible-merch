@@ -9,6 +9,7 @@ Started: 2026-03-28
 - Scrape fallback: if playwright fails, load from `data/events.json`
 - Qwen3 LLM output: strip `<think>` tags and markdown code blocks before JSON parsing
 - W&B Inference client: `OpenAI(base_url='https://api.inference.wandb.ai/v1', api_key=WANDB_API_KEY)`
+- Pipeline checkpoint pattern: `_run_stage(checkpoint, fn, label)` — load JSON if exists, else run and save
 
 ---
 
@@ -72,4 +73,17 @@ Started: 2026-03-28
   - Gemini image gen works reliably with `response_modalities=['TEXT', 'IMAGE']`
   - `part.as_image()` returns a PIL Image that can be saved directly
   - FutureWarning from google-auth on Python 3.9 is harmless
+---
+
+## 2026-03-28 - US-006
+- Created `app/pipeline.py` with `run_pipeline(event_url, clean)` function
+- Created `run.py` at project root as CLI entry point with `--clean` flag
+- Pipeline runs 4 stages: scrape → briefs → critique → images
+- Checkpoint system: each stage saves/loads from `checkpoints/*.json`
+- On restart, skips completed stages automatically
+- Saves final summary to `output/results.json`
+- Files changed: `app/pipeline.py`, `run.py`, `prd.json`, `progress.txt`
+- **Learnings:**
+  - Checkpoint recovery works well for long pipelines with API calls
+  - `shutil.rmtree` for `--clean` is simpler than iterating files
 ---
