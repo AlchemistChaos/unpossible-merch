@@ -3,3 +3,4 @@ openai
 weave
 wandb
 python-dotenv
+requests
