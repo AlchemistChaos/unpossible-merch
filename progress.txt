@@ -144,3 +144,17 @@ Started: 2026-03-28
   - Blast manage URL pattern: `{event_url}/manage/blasts` — direct navigation works
   - Luma blast editor may use contenteditable divs rather than standard textbox inputs
 ---
+
+## 2026-03-28 - US-009
+- Verified end-to-end CLI pipeline already complete from incremental builds during US-006 through US-008
+- `app/pipeline.py`: all 7 stages (scrape → briefs → critique → images → Fourthwall → storefront → blast)
+- `run.py`: CLI entry point with `--clean` flag
+- Checkpoint system: `_run_stage()` loads from JSON if exists, else runs and saves
+- Results summary saved to `output/results.json`
+- All imports verified, checkpoint recovery tested for stages 1-4
+- Files changed: `prd.json` (passes: true)
+- **Learnings:**
+  - Pipeline was built incrementally — each stage added as its story was implemented
+  - Checkpoints 05-07 not saved to disk because those stages were run directly, not via pipeline
+  - US-012 (end-to-end verification) is the proper integration test for all stages
+---

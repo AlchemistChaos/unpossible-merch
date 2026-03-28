@@ -151,7 +151,7 @@
         "Test: python run.py"
       ],
       "priority": 9,
-      "passes": false,
+      "passes": true,
       "notes": "Checkpoint files: 01-event-data.json through 07-luma-blast.json. Add --clean flag to clear checkpoints."
     },
     {
