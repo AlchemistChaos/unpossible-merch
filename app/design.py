@@ -10,7 +10,7 @@ from app.config import GOOGLE_API_KEY
 
 
 @weave.op()
-def generate_design(brief):
+def generate_design(brief, output_dir="output"):
     """Generate a t-shirt design image from a brief using Gemini."""
     client = genai.Client(api_key=GOOGLE_API_KEY)
 
@@ -26,9 +26,9 @@ def generate_design(brief):
                 ),
             )
 
-            os.makedirs("output", exist_ok=True)
+            os.makedirs(output_dir, exist_ok=True)
             filename = f"{brief['id']}-{brief['category']}.png"
-            filepath = os.path.join("output", filename)
+            filepath = os.path.join(output_dir, filename)
 
             for part in response.parts:
                 if part.inline_data is not None:
@@ -49,12 +49,12 @@ def generate_design(brief):
                 return {"brief_id": brief["id"], "file": None, "status": f"error: {e}"}
 
 
-def generate_all_designs(briefs):
+def generate_all_designs(briefs, output_dir="output"):
     """Generate designs for all briefs with delays between calls."""
     results = []
     for i, brief in enumerate(briefs):
         print(f"Generating design {i + 1}/{len(briefs)}: {brief['title']}")
-        result = generate_design(brief)
+        result = generate_design(brief, output_dir=output_dir)
         results.append(result)
         if i < len(briefs) - 1:
             time.sleep(2)

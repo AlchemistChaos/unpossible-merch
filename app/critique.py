@@ -33,7 +33,7 @@ def _build_critique_prompt(briefs):
     """Build the LLM prompt for critiquing briefs."""
     briefs_json = json.dumps(briefs, indent=2)
 
-    return f"""You are evaluating 10 t-shirt design briefs for a hackathon event. Your job is to select the BEST 6 designs.
+    return f"""You are evaluating 10 t-shirt design briefs for a hackathon event. Your job is to select the BEST 3 designs.
 
 HERE ARE THE 10 BRIEFS:
 {briefs_json}
@@ -45,11 +45,11 @@ EVALUATION CRITERIA (score each 1-10):
 4. **Humor/Appeal**: Would attendees actually want to wear this?
 
 SELECTION RULES:
-- Select exactly 6 briefs
+- Select exactly 3 briefs
 - Aim for ~2 from each category (crisp-simple, funny-meme, sponsor-logo), but prioritize quality over quota
 - Drop the weakest designs regardless of category
 
-Return a JSON array of exactly 6 objects. Each object should be the ORIGINAL brief with one added field:
+Return a JSON array of exactly 3 objects. Each object should be the ORIGINAL brief with one added field:
 - "critique_notes": A string with 1-2 sentences explaining why this brief was selected and any improvements suggested
 
 Return ONLY the JSON array, no markdown formatting, no code blocks, no explanation."""
@@ -88,13 +88,13 @@ def _parse_critique(raw_text, original_briefs):
             brief["critique_notes"] = "Selected as a strong design."
 
     # If LLM returned more or fewer than 6, adjust
-    if len(selected) > 6:
-        selected = selected[:6]
-    elif len(selected) < 6:
+    if len(selected) > 3:
+        selected = selected[:3]
+    elif len(selected) < 3:
         # Fill from originals that weren't selected
         selected_ids = {b.get("id") for b in selected}
         for b in original_briefs:
-            if b.get("id") not in selected_ids and len(selected) < 6:
+            if b.get("id") not in selected_ids and len(selected) < 3:
                 b["critique_notes"] = "Added to fill selection quota."
                 selected.append(b)
 

@@ -28,10 +28,13 @@ def run_pipeline(event_url=None, clean=False, mock=False, skip_blast=False):
         _clean_checkpoints()
 
     os.makedirs(CHECKPOINTS_DIR, exist_ok=True)
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     url = event_url or LUMA_EVENT_URL
     session_id = str(uuid.uuid4())[:8]
+    run_timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    run_output_dir = os.path.join(OUTPUT_DIR, f"run-{run_timestamp}")
+    os.makedirs(run_output_dir, exist_ok=True)
+    print(f"Output directory: {run_output_dir}")
     errors = []
     stages_completed = 0
 
@@ -63,9 +66,15 @@ def run_pipeline(event_url=None, clean=False, mock=False, skip_blast=False):
     print(f"  Session: {session_id} | Event: {event_name}")
 
     with weave.attributes({"session_id": session_id, "event_name": event_name, "event_url": url}):
-        # Stage 2: Generate 10 briefs
+        # Always regenerate briefs, critique, and images (fresh each run)
+        for cp in ["02-briefs.json", "03-selected-briefs.json", "04-images.json"]:
+            cp_path = os.path.join(CHECKPOINTS_DIR, cp)
+            if os.path.exists(cp_path):
+                os.remove(cp_path)
+
+        # Stage 2: Generate 5 briefs
         print("\n" + "=" * 50)
-        print("STAGE 2: Generate 10 Design Briefs")
+        print("STAGE 2: Generate 5 Design Briefs")
         print("=" * 50)
         briefs = None
         try:
@@ -79,11 +88,11 @@ def run_pipeline(event_url=None, clean=False, mock=False, skip_blast=False):
             print(f"  ERROR: Stage 2 failed: {e}")
             errors.append(f"Stage 2 (briefs): {e}")
 
-        # Stage 3: Critique and select 6
+        # Stage 3: Critique and select best 3
         selected = None
         if briefs:
             print("\n" + "=" * 50)
-            print("STAGE 3: Self-Critique -> Select 6 Briefs")
+            print("STAGE 3: Self-Critique -> Select Best 3 Briefs")
             print("=" * 50)
             try:
                 selected = _run_stage(
@@ -96,7 +105,7 @@ def run_pipeline(event_url=None, clean=False, mock=False, skip_blast=False):
                 print(f"  ERROR: Stage 3 failed: {e}")
                 errors.append(f"Stage 3 (critique): {e}")
 
-        # Stage 4: Generate images
+        # Stage 4: Generate images into run-specific output dir
         images = None
         if selected:
             print("\n" + "=" * 50)
@@ -105,7 +114,7 @@ def run_pipeline(event_url=None, clean=False, mock=False, skip_blast=False):
             try:
                 images = _run_stage(
                     checkpoint="04-images.json",
-                    fn=lambda: generate_all_designs(selected),
+                    fn=lambda: generate_all_designs(selected, output_dir=run_output_dir),
                     label="image generation",
                 )
                 stages_completed += 1

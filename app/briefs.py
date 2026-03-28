@@ -47,7 +47,7 @@ def _build_prompt(event_data):
     speakers = event_data.get("speakers", [])
     judges = event_data.get("judges", [])
 
-    return f"""Generate exactly 10 t-shirt design briefs for the hackathon event below. These should be GENUINELY FUNNY — the kind of design that makes someone laugh and actually want to wear it.
+    return f"""Generate exactly 5 t-shirt design briefs for the hackathon event below. These should be GENUINELY FUNNY — the kind of design that makes someone laugh and actually want to wear it.
 
 EVENT DETAILS:
 - Name: {name}
@@ -67,17 +67,17 @@ KEY EVENT HUMOR SOURCE MATERIAL:
 
 CATEGORIES — each has a distinct comedy voice:
 
-4 briefs with category "crisp-simple" — NATE BARGATZE ENERGY:
+2 briefs with category "crisp-simple" — NATE BARGATZE ENERGY:
   Deadpan wholesome absurdism. Say something completely ridiculous like it's totally normal.
   Minimalist typography, one killer deadpan line. The joke lands because it's so understated.
   Examples: "My computer's been working all day. I've been eating snacks." / "I don't know what my agent built but I'm presenting it in 20 minutes"
 
-4 briefs with category "funny-meme" — MATT RIFE ENERGY:
+2 briefs with category "funny-meme" — MATT RIFE ENERGY:
   Crowd-work roast humor. Self-aware, riffs on the absurdity of hackathon culture.
   Bold graphic + roast-style text. Visual gags about the event.
   Examples: Roasting the lobster costume rule / "My AI agent has more commits than my entire team" / Ralph Wiggum references
 
-2 briefs with category "sponsor-logo" — HASAN MINHAJ ENERGY:
+1 brief with category "sponsor-logo" — HASAN MINHAJ ENERGY:
   Sharp cultural commentary on tech/VC hype. Sponsor names ({', '.join(sponsors)}) styled as NASCAR typography remixed as absurd fake products or startup pitches. NOT actual logos.
   Examples: "Raised $50M to let a robot write code I could've copy-pasted" / Sponsor names as fake VC-funded products
 
@@ -89,8 +89,8 @@ DESIGN CONSTRAINTS:
 - Be specific about visual layout and typography style
 - Slogans should be short, punchy, and funny enough that someone would actually wear it in public
 
-Return a JSON array of exactly 10 objects, each with these fields:
-- "id": string like "brief-01" through "brief-10"
+Return a JSON array of exactly 5 objects, each with these fields:
+- "id": string like "brief-01" through "brief-05"
 - "title": short creative title for the design
 - "category": one of "crisp-simple", "funny-meme", "sponsor-logo"
 - "description": detailed description of the visual design (2-3 sentences). Describe the GRAPHIC only, not a t-shirt. Be specific about visual layout and what illustrated elements to include.
