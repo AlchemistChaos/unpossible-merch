@@ -1,3 +1,19 @@
 # Ralph Progress Log
 Started: 2026-03-28
+
+## Codebase Patterns
+- Always `source venv/bin/activate` before running Python commands
+- Use `from app.config import ...` to access env vars
+- Python 3.9 is installed (not 3.10+), generates FutureWarning from google-auth — safe to ignore
+
+---
+
+## 2026-03-28 - US-001
+- Created venv, installed all dependencies from requirements.txt
+- Created `app/__init__.py` and `app/config.py` (loads .env via python-dotenv)
+- Verified: imports work, config loads, playwright-cli v1.59.0-alpha available
+- Files changed: `app/__init__.py`, `app/config.py`
+- **Learnings:**
+  - Python is 3.9, not 3.10+ — some deprecation warnings but everything works
+  - playwright-cli is globally installed and working
 ---

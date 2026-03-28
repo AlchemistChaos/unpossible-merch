@@ -16,7 +16,7 @@
         "Verify playwright-cli is available: playwright-cli --version"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "Use .env for all keys. See .env.example for reference. playwright-cli is already installed globally."
     },
     {
