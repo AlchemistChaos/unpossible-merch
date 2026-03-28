@@ -32,7 +32,7 @@
         "Test: python -c 'from app.scrape_event import scrape_event; print(scrape_event(\"https://luma.com/hh5k4ahp\"))'"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "Use playwright-cli CLI commands via subprocess. Key commands: playwright-cli open <url>, playwright-cli snapshot, playwright-cli eval <js>. The event page is public so no login needed for scraping. Login creds in .env are for co-host features only (not needed for this task)."
     },
     {
@@ -49,7 +49,7 @@
         "Test with scraped or mock event data"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "Use model 'OpenPipe/Qwen3-14B-Instruct' via W&B Inference. Prompt should ask for JSON output. Sponsor names as text only (no logos). All designs black and white."
     },
     {
@@ -64,7 +64,7 @@
         "Test: python -c 'from app.critique import critique_briefs; ...'"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "This is the self-critique loop from the design doc. Feed all 10 briefs to the LLM and ask it to rank and select 6."
     },
     {
@@ -82,7 +82,7 @@
         "Test: generate at least 1 design successfully"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "Use types.GenerateContentConfig(response_modalities=['TEXT', 'IMAGE']). See CLAUDE.md for exact code pattern. Accept whatever Gemini produces if API call succeeds."
     },
     {
