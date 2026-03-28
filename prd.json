@@ -204,7 +204,7 @@
         "No Python tracebacks in final successful run"
       ],
       "priority": 12,
-      "passes": false,
+      "passes": true,
       "notes": "This is the integration test story. Test everything — including the blast. Work backwards from failures. If stage 4 (images) fails, don't re-run stages 1-3 — use the checkpoint system. Fix the broken stage, delete its checkpoint, and re-run. The goal is a clean end-to-end run of the entire pipeline."
     }
   ]

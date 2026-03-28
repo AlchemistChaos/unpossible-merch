@@ -29,6 +29,18 @@ def upload_designs(selected_briefs, image_results):
     Returns:
         Dict with products list, API verification, and counts.
     """
+    # Check if products already exist on Fourthwall
+    existing = _verify_products_via_api()
+    existing_count = existing.get("product_count", 0) if existing.get("status") == "verified" else 0
+    if existing_count > 0:
+        print(f"  Products already exist on Fourthwall ({existing_count} found). Skipping upload.")
+        return {
+            "products": [{"brief_id": p.get("slug", ""), "status": "existing", "name": p.get("name")} for p in existing.get("products", [])],
+            "api_verification": existing,
+            "successful": existing_count,
+            "failed": 0,
+        }
+
     # Get shop domain from API
     shop_domain = _get_shop_domain()
 

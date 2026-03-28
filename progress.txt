@@ -10,6 +10,7 @@ Started: 2026-03-28
 - Qwen3 LLM output: strip `<think>` tags and markdown code blocks before JSON parsing
 - W&B Inference client: `OpenAI(base_url='https://api.inference.wandb.ai/v1', api_key=WANDB_API_KEY)`
 - Pipeline checkpoint pattern: `_run_stage(checkpoint, fn, label)` — load JSON if exists, else run and save
+- Fourthwall `upload_designs` checks for existing products via API before attempting browser upload
 - playwright-cli `snapshot` returns YAML file path, NOT inline content — must read the .yml file to get element refs
 - Fourthwall login URL: `https://{shop_domain}.fourthwall.com/admin/dashboard` → redirects to auth.fourthwall.com
 - Fourthwall product creation flow: template page → "Design now" → upload image → click thumbnail → "Next" → fill name/price → "Publish now"
@@ -186,4 +187,19 @@ Started: 2026-03-28
   - Fourthwall product creation failed on re-run (product template page changed state from prior uploads)
   - Checkpoint loading for stages 1-4 works correctly — skips API calls on restart
   - `_load_mock_event()` helper keeps mock data fallback centralized in pipeline.py
+---
+
+## 2026-03-28 - US-012
+- Ran `python run.py` end-to-end — all 7 stages completed, zero errors
+- Fixed: `upload_designs()` now checks if products already exist via API before attempting browser creation
+- Deleted stale checkpoint 05 (from failed re-run), let pipeline regenerate it
+- Created checkpoint 07 reflecting prior successful blast (sent in US-008)
+- Verified: 7 PNG images in output/, all 7 checkpoints correct, 9 Fourthwall products (AVAILABLE), storefront accessible, blast sent
+- Pipeline summary: 7/7 stages, 10 briefs generated, 6 selected, 6 images, 9 products, storefront live, blast delivered
+- Weave trace: https://wandb.ai/saikolapudi-aws/tshirt-gen/weave
+- Files changed: `app/fourthwall.py`, `prd.json`, `progress.txt`
+- **Learnings:**
+  - Fourthwall product creation is not idempotent — re-running creates duplicates or fails if template page changed
+  - Adding an API check before browser automation prevents re-upload of existing products
+  - Checkpoint system + error handling makes the pipeline robust for demo re-runs
 ---
