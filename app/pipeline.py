@@ -66,9 +66,9 @@ def run_pipeline(event_url=None, clean=False, mock=False, skip_blast=False):
     print(f"  Session: {session_id} | Event: {event_name}")
 
     with weave.attributes({"session_id": session_id, "event_name": event_name, "event_url": url}):
-        # Always regenerate briefs, images, and uploads (fresh each run)
-        for cp in ["02-briefs.json", "03-selected-briefs.json", "04-images.json",
-                    "05-fourthwall-products.json", "06-storefront.json"]:
+        # Always regenerate everything except event scrape (fresh each run)
+        for cp in ["01-event-data.json", "02-briefs.json", "03-selected-briefs.json",
+                    "04-images.json", "05-fourthwall-products.json", "06-storefront.json"]:
             cp_path = os.path.join(CHECKPOINTS_DIR, cp)
             if os.path.exists(cp_path):
                 os.remove(cp_path)

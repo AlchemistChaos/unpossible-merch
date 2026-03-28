@@ -181,6 +181,10 @@ def _parse_event_data(page_text):
 
     attendee_types = ["hackers", "speakers", "judges", "sponsors"]
 
+    # Capture the full page text for the briefs prompt to use as humor source material
+    # This includes prizes, schedule, rules, backstory, OSS partners etc.
+    full_text = page_text[:5000]  # Cap at 5000 chars to avoid token limits
+
     return {
         "name": name,
         "description": description,
@@ -191,7 +195,8 @@ def _parse_event_data(page_text):
         "judges": judges[:15],
         "attendee_types": attendee_types,
         "source_url": "https://luma.com/hh5k4ahp",
-        "tags": ["hackathon", "AI agents", "autonomous", "Ralph Loop", "lobster costume"]
+        "tags": ["hackathon", "AI agents", "autonomous", "Ralph Loop", "lobster costume"],
+        "full_page_text": full_text,
     }
 
 

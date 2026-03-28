@@ -46,6 +46,7 @@ def _build_prompt(event_data):
     tags = event_data.get("tags", [])
     speakers = event_data.get("speakers", [])
     judges = event_data.get("judges", [])
+    full_page = event_data.get("full_page_text", "")
 
     return f"""Generate exactly 5 t-shirt design briefs for the hackathon event below. These should be GENUINELY FUNNY — the kind of design that makes someone laugh and actually want to wear it.
 
@@ -58,12 +59,15 @@ EVENT DETAILS:
 - Judges: {', '.join(judges[:5])}
 - Tags: {', '.join(tags)}
 
-KEY EVENT HUMOR SOURCE MATERIAL:
-- "If you want to touch your laptop, you put on a lobster costume first" (real rule at the event)
-- Named after Ralph Wiggum from The Simpsons ("Me fail English? That's unpossible!")
-- Teams set up AI agents to code autonomously, then humans go network while agents work
-- Previous event in Seoul: people slept while their agents coded overnight
-- Prizes include $10K in API credits
+FULL EVENT PAGE CONTENT (mine this for humor, inside jokes, absurd details, rules, prizes, schedule quirks):
+---
+{full_page}
+---
+
+IMPORTANT CONTEXT FOR HUMOR:
+- The event name "Unpossible" comes from Ralph Wiggum (The Simpsons) — "Me fail English? That's unpossible!"
+- Ralph Wiggum is lovably clueless. Channel his energy. Other Ralph quotes: "I'm learnding!", "I bent my wookie", "My cat's breath smells like cat food"
+- USE the actual content from the event page above to make jokes — real rules, real schedule items, real sponsor names, real prizes. Don't make up generic tech humor. The funnier the design, the more it references SPECIFIC things from this event.
 
 CATEGORIES — each has a distinct comedy voice:
 
