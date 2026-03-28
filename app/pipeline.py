@@ -10,6 +10,7 @@ from app.scrape_event import scrape_event
 from app.briefs import generate_briefs
 from app.critique import critique_briefs
 from app.design import generate_all_designs
+from app.quality_check import review_designs
 from app.fourthwall import upload_designs
 from app.storefront import setup_storefront
 from app.luma_blast import send_blast
@@ -111,6 +112,22 @@ def run_pipeline(event_url=None, clean=False, mock=False, skip_blast=False):
             except Exception as e:
                 print(f"  ERROR: Stage 4 failed: {e}")
                 errors.append(f"Stage 4 (images): {e}")
+
+        # Stage 4b: Quality check & regenerate weak designs
+        if selected and images:
+            print("\n" + "=" * 50)
+            print("STAGE 4b: Quality Review & Regenerate")
+            print("=" * 50)
+            try:
+                images = review_designs(selected, images)
+                # Re-save the checkpoint with updated image paths
+                cp_path = os.path.join(CHECKPOINTS_DIR, "04-images.json")
+                with open(cp_path, "w") as f:
+                    json.dump(images, f, indent=2)
+                print("  Updated checkpoint: 04-images.json")
+            except Exception as e:
+                print(f"  ERROR: Quality review failed: {e}")
+                errors.append(f"Stage 4b (quality): {e}")
 
         # Stage 5: Upload to Fourthwall
         fourthwall = None

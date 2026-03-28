@@ -4,6 +4,7 @@ import re
 import subprocess
 import time
 
+import requests
 import weave
 
 from app.config import PLATFORM_EMAIL, PLATFORM_PASSWORD, LUMA_EVENT_URL
@@ -12,30 +13,17 @@ from app.fourthwall import _pw, _snapshot, _find_ref, _find_all_refs, _current_u
 
 @weave.op()
 def send_blast(event_url, storefront_url):
-    """Send a Luma blast to all event attendees with the merch store link.
-
-    Uses playwright-cli browser automation to:
-    1. Log in to Luma
-    2. Navigate to event > Manage Event > Blasts
-    3. Compose a blast with the storefront URL
-    4. Send to all 'Going' attendees
-
-    Args:
-        event_url: The Luma event URL (e.g., https://luma.com/hh5k4ahp)
-        storefront_url: The Fourthwall storefront URL to share.
-
-    Returns:
-        Dict with blast status and details.
-    """
+    """Send a Luma blast to all event attendees with the merch store link."""
     try:
         # Step 1: Log in to Luma
         print("  Logging in to Luma...")
         _luma_login()
         time.sleep(3)
 
-        # Step 2: Navigate to event management / blasts page
-        print("  Navigating to event blasts page...")
-        _navigate_to_blasts(event_url)
+        # Step 2: Get the event API ID and navigate to manage page
+        print("  Navigating to event manage page...")
+        event_api_id = _get_event_api_id(event_url)
+        _navigate_to_manage(event_api_id)
         time.sleep(3)
 
         # Step 3: Compose and send the blast
@@ -65,120 +53,148 @@ def send_blast(event_url, storefront_url):
 
 
 # ---------------------------------------------------------------------------
+# Get event API ID from Luma API
+# ---------------------------------------------------------------------------
+
+def _get_event_api_id(event_url):
+    """Extract the event slug and get the internal event API ID from Luma's API.
+
+    The manage page URL uses the internal API ID (evt-xxx), not the slug (hh5k4ahp).
+    """
+    # Extract slug from URL (e.g., "hh5k4ahp" from "https://luma.com/hh5k4ahp")
+    slug = event_url.rstrip("/").split("/")[-1]
+
+    resp = requests.get(
+        f"https://api.lu.ma/event/get?event_api_id={slug}",
+        timeout=15,
+    )
+    if resp.status_code == 200:
+        data = resp.json()
+        # The event API ID is at the top level, not nested under "event"
+        api_id = data.get("api_id")
+        if api_id:
+            print(f"    Event API ID: {api_id}")
+            return api_id
+
+    raise RuntimeError(f"Could not get event API ID for slug '{slug}' (status {resp.status_code})")
+
+
+# ---------------------------------------------------------------------------
 # Luma login
 # ---------------------------------------------------------------------------
 
 def _luma_login():
-    """Log in to Luma via browser automation."""
+    """Log in to Luma via browser automation.
+
+    Flow: lu.ma/signin -> enter email -> Continue with Email -> enter password -> Continue
+    """
     _pw("open", "https://lu.ma/signin")
     time.sleep(5)
 
     snap = _snapshot()
 
-    # Find email field
-    email_ref = (
-        _find_ref(snap, "email", "textbox")
-        or _find_ref(snap, "email")
-    )
-    if email_ref:
-        _pw("fill", email_ref, PLATFORM_EMAIL)
-        time.sleep(1)
-    else:
+    # Fill email
+    email_ref = _find_ref(snap, "email", "textbox")
+    if not email_ref:
+        email_ref = _find_ref(snap, "email")
+    if not email_ref:
         raise RuntimeError("Could not find email field on Luma login page")
 
-    # Click continue / sign in button
+    _pw("fill", email_ref, PLATFORM_EMAIL)
+    time.sleep(1)
+
+    # Click "Continue with Email"
     snap = _snapshot()
     continue_ref = (
-        _find_ref(snap, "continue", "button")
-        or _find_ref(snap, "log in", "button")
-        or _find_ref(snap, "sign in", "button")
-        or _find_ref(snap, "continue")
-        or _find_ref(snap, "log in")
-        or _find_ref(snap, "sign in")
+        _find_ref(snap, "continue with email", "button")
+        or _find_ref(snap, "continue with email")
+        or _find_ref(snap, "continue", "button")
     )
     if continue_ref:
         _pw("click", continue_ref)
         time.sleep(3)
 
-    # Fill password if a password field appears
+    # Fill password — the textbox on the password page has no label,
+    # it's just "textbox [active]", so find it by looking for the active textbox
     snap = _snapshot()
     pass_ref = (
-        _find_ref(snap, "password", "textbox")
-        or _find_ref(snap, "password")
+        _find_ref(snap, "textbox", "active")
+        or _find_ref(snap, "password", "textbox")
+        or _find_ref(snap, "textbox")
     )
-    if pass_ref:
-        _pw("fill", pass_ref, PLATFORM_PASSWORD)
-        time.sleep(1)
+    if not pass_ref:
+        raise RuntimeError("Password field not found after email submission")
 
-        # Click log in / continue
-        snap = _snapshot()
-        login_ref = (
-            _find_ref(snap, "log in", "button")
-            or _find_ref(snap, "sign in", "button")
-            or _find_ref(snap, "continue", "button")
-            or _find_ref(snap, "log in")
-            or _find_ref(snap, "sign in")
-            or _find_ref(snap, "continue")
-        )
-        if login_ref:
-            _pw("click", login_ref)
-            time.sleep(5)
+    _pw("fill", pass_ref, PLATFORM_PASSWORD)
+    time.sleep(1)
 
-    # Verify login by checking URL changed away from signin
-    url = _current_url()
-    if "signin" in url.lower():
-        # Try pressing Enter as fallback
-        _pw("press", "Enter")
+    # Click Continue
+    snap = _snapshot()
+    login_ref = (
+        _find_ref(snap, "continue", "button")
+        or _find_ref(snap, "log in", "button")
+        or _find_ref(snap, "sign in", "button")
+    )
+    if login_ref:
+        _pw("click", login_ref)
         time.sleep(5)
+
+    # Verify login by checking page content (URL may still show /signin
+    # due to client-side routing, but page content changes to logged-in state)
+    snap = _snapshot()
+
+    # Dismiss passkey dialog if it appears
+    if "create a passkey" in snap.lower() or "not now" in snap.lower():
+        not_now_ref = _find_ref(snap, "not now", "button") or _find_ref(snap, "not now")
+        if not_now_ref:
+            _pw("click", not_now_ref)
+        else:
+            _pw("press", "Escape")
+        time.sleep(2)
+        snap = _snapshot()
+
+    # Check for logged-in indicators in page content
+    logged_in = (
+        "create event" in snap.lower()
+        or "events" in snap.lower() and "calendars" in snap.lower()
+        or "/home" in snap.lower()
+    )
+
+    if not logged_in:
+        raise RuntimeError("Login failed — page does not show logged-in state")
 
     print("    Logged in to Luma")
 
 
 # ---------------------------------------------------------------------------
-# Navigation to blasts
+# Navigation to manage page
 # ---------------------------------------------------------------------------
 
-def _navigate_to_blasts(event_url):
-    """Navigate to the event's blast page in Luma manage view.
+def _navigate_to_manage(event_api_id):
+    """Navigate to the event management page using the internal event API ID.
 
-    Luma manage URL pattern: event_url + '/manage/blasts'
-    e.g., https://lu.ma/hh5k4ahp -> https://lu.ma/hh5k4ahp/manage/blasts
+    The correct URL pattern is: https://luma.com/event/manage/{event_api_id}
+    NOT: https://lu.ma/{slug}/manage/blasts (this shows the public event page)
     """
-    # Normalize event URL to lu.ma format
-    base_url = event_url.rstrip("/")
-    # Handle both luma.com and lu.ma URLs
-    base_url = base_url.replace("https://luma.com/", "https://lu.ma/")
-    base_url = base_url.replace("http://luma.com/", "https://lu.ma/")
-
-    blasts_url = f"{base_url}/manage/blasts"
-    _pw("goto", blasts_url)
+    manage_url = f"https://luma.com/event/manage/{event_api_id}"
+    _pw("goto", manage_url)
     time.sleep(5)
 
-    # Verify we're on the blasts page
+    # Verify we're on the manage page
     snap = _snapshot()
     url = _current_url()
 
-    # If redirected to event page, try finding "Manage Event" link
-    if "manage" not in url.lower():
-        manage_ref = (
-            _find_ref(snap, "manage event")
-            or _find_ref(snap, "manage")
-        )
-        if manage_ref:
-            _pw("click", manage_ref)
-            time.sleep(3)
+    # Check for manage page indicators
+    has_manage = (
+        "send a blast" in snap.lower()
+        or "blasts" in snap.lower()
+        or "/manage/" in url.lower()
+    )
 
-        # Then navigate to blasts tab
-        snap = _snapshot()
-        blasts_ref = (
-            _find_ref(snap, "blasts")
-            or _find_ref(snap, "blast")
-        )
-        if blasts_ref:
-            _pw("click", blasts_ref)
-            time.sleep(3)
+    if not has_manage:
+        raise RuntimeError(f"Failed to reach manage page. URL: {url}")
 
-    print(f"    On blasts page: {_current_url()}")
+    print(f"    On manage page: {url}")
 
 
 # ---------------------------------------------------------------------------
@@ -186,121 +202,146 @@ def _navigate_to_blasts(event_url):
 # ---------------------------------------------------------------------------
 
 def _compose_and_send_blast(storefront_url):
-    """Compose a merch announcement blast and send it."""
+    """Open the blast compose dialog, fill in subject + message, and send."""
     snap = _snapshot()
 
-    # Look for "New Blast" or "Create Blast" or "Send Blast" button
-    new_blast_ref = (
-        _find_ref(snap, "new blast")
-        or _find_ref(snap, "create blast")
+    # Click "Send a Blast" button on the manage page
+    blast_btn = (
+        _find_ref(snap, "send a blast", "button")
+        or _find_ref(snap, "send a blast")
         or _find_ref(snap, "send blast")
-        or _find_ref(snap, "new blast", "button")
-        or _find_ref(snap, "compose")
-        or _find_ref(snap, "create", "button")
     )
-    if new_blast_ref:
-        _pw("click", new_blast_ref)
-        time.sleep(3)
+    if not blast_btn:
+        raise RuntimeError("Could not find 'Send a Blast' button on manage page")
 
-    # Compose the blast message
-    blast_subject = "Your exclusive Ralphathon merch is here!"
-    blast_body = (
-        "Hey Ralphathon crew! We made custom t-shirt designs just for this event. "
-        f"Check out the merch store and grab yours before they're gone: {storefront_url}"
-    )
+    _pw("click", blast_btn)
+    time.sleep(3)
 
+    # Verify the compose dialog opened
     snap = _snapshot()
+    if "send blast" not in snap.lower() and "subject" not in snap.lower():
+        raise RuntimeError("Blast compose dialog did not open")
 
-    # Fill subject if there's a subject field
+    # Fill subject
+    blast_subject = "Your exclusive Ralphathon merch is here!"
     subject_ref = (
         _find_ref(snap, "subject", "textbox")
         or _find_ref(snap, "subject")
-        or _find_ref(snap, "title", "textbox")
     )
     if subject_ref:
         _pw("fill", subject_ref, blast_subject)
         time.sleep(1)
 
-    # Fill body/message content
-    body_ref = (
-        _find_ref(snap, "message", "textbox")
-        or _find_ref(snap, "body", "textbox")
-        or _find_ref(snap, "content", "textbox")
-        or _find_ref(snap, "message")
-        or _find_ref(snap, "body")
-        or _find_ref(snap, "write", "textbox")
+    # Fill message body — the message field is a textbox (not contenteditable)
+    # that contains a placeholder paragraph "Share a message with your guests…"
+    blast_body = (
+        "Hey Ralphathon crew! We made custom t-shirt designs just for this event. "
+        f"Check out the merch store and grab yours before they're gone: {storefront_url}"
     )
+
+    # Find the message textbox — it's an unlabeled textbox near "Message" label
+    # We need the textbox that contains the "Share a message" placeholder
+    snap = _snapshot()
+
+    # Find all textbox refs, the message one is after the subject one
+    all_textbox_refs = _find_all_refs(snap, "textbox")
+    body_ref = None
+    if len(all_textbox_refs) >= 2:
+        # Second textbox in the dialog (first is subject)
+        body_ref = all_textbox_refs[-1]  # Last textbox is the message body
+    if not body_ref:
+        body_ref = _find_ref(snap, "share a message")
+
     if body_ref:
+        _pw("click", body_ref)
+        time.sleep(0.5)
         _pw("fill", body_ref, blast_body)
         time.sleep(1)
     else:
-        # Try typing into any focused/editable area
-        # Luma blast editor might be a contenteditable div
-        _pw("eval", f"""
-            const editors = document.querySelectorAll('[contenteditable="true"]');
-            if (editors.length > 0) {{
-                editors[editors.length - 1].innerText = `{blast_body}`;
-            }}
-        """)
-        time.sleep(1)
+        raise RuntimeError("Could not find message body field")
 
-    # Select recipients - target "Going" attendees
+    # Verify the message was filled
     snap = _snapshot()
-    going_ref = (
-        _find_ref(snap, "going")
-        or _find_ref(snap, "all attendees")
-        or _find_ref(snap, "attendees")
-    )
-    if going_ref:
-        _pw("click", going_ref)
-        time.sleep(1)
+    if storefront_url.lower() not in snap.lower() and "merch" not in snap.lower():
+        raise RuntimeError("Message body does not appear to be filled")
 
-    # Click Send
-    snap = _snapshot()
-    send_ref = (
-        _find_ref(snap, "send blast", "button")
-        or _find_ref(snap, "send", "button")
-        or _find_ref(snap, "send blast")
-        or _find_ref(snap, "send")
-    )
-    if send_ref:
-        _pw("click", send_ref)
-        time.sleep(3)
+    # Click Send button — must find the one inside the blast dialog (ref=e360),
+    # NOT the "Send a Blast" button on the manage page (ref=e78).
+    # The dialog's Send button has text "Send" (not "Send a Blast")
+    # Find it by looking for a button whose line has "Send" but NOT "Blast"
+    send_ref = None
+    for line in snap.split("\n"):
+        lower = line.lower()
+        if 'button' in lower and '[ref=' in lower:
+            # Match "Send" button but not "Send a Blast"
+            if 'send' in lower and 'blast' not in lower and 'share' not in lower:
+                match = re.search(r'\[ref=([\w]+)\]', line)
+                if match:
+                    send_ref = match.group(1)
+                    break
 
-    # Confirm send if there's a confirmation dialog
+    if not send_ref:
+        raise RuntimeError("Could not find Send button in blast compose dialog")
+
+    print(f"    Clicking Send (ref={send_ref})")
+    _pw("click", send_ref)
+    time.sleep(3)
+
+    # Handle confirmation dialog if one appears
     snap = _snapshot()
     confirm_ref = (
         _find_ref(snap, "confirm", "button")
         or _find_ref(snap, "yes", "button")
         or _find_ref(snap, "send", "button")
-        or _find_ref(snap, "confirm")
     )
     if confirm_ref:
         _pw("click", confirm_ref)
         time.sleep(3)
 
-    # Check final state
+    # Verify send succeeded
+    # After sending, the dialog should close and we should be back on manage page
+    # or there should be a success indicator
+    time.sleep(2)
+    snap = _snapshot()
     final_url = _current_url()
-    final_snap = _snapshot()
 
-    # Look for success indicators
-    sent = (
-        "sent" in final_snap.lower()
-        or "success" in final_snap.lower()
-        or "delivered" in final_snap.lower()
-        or "blast" in final_snap.lower()
+    # Check for real success: the blast compose dialog should be gone,
+    # and we should see the blast in the sent list, or a success toast
+    blast_dialog_gone = "subject" not in snap.lower() or "share a message" not in snap.lower()
+    has_sent_indicator = (
+        "sent" in snap.lower()
+        or "delivered" in snap.lower()
+        or "success" in snap.lower()
     )
+
+    # Also navigate to the Blasts tab to verify
+    blasts_tab = _find_ref(snap, "blasts", "link")
+    if blasts_tab:
+        _pw("click", blasts_tab)
+        time.sleep(3)
+        snap = _snapshot()
+        # Check if our subject appears in the blasts list
+        has_blast_in_list = blast_subject.lower() in snap.lower() or "ralphathon merch" in snap.lower()
+    else:
+        has_blast_in_list = False
+
+    sent = blast_dialog_gone or has_sent_indicator or has_blast_in_list
+
+    if not sent:
+        print(f"    WARNING: Could not confirm blast was sent. URL: {final_url}")
 
     return {
         "subject": blast_subject,
         "body": blast_body,
         "final_url": final_url,
-        "sent_indicator_found": sent,
+        "blast_dialog_closed": blast_dialog_gone,
+        "sent_indicator_found": has_sent_indicator,
+        "blast_in_sent_list": has_blast_in_list,
+        "verified_sent": sent,
     }
 
 
 if __name__ == "__main__":
-    # Test with checkpoint data if available
     storefront_path = "checkpoints/06-storefront.json"
     event_url = LUMA_EVENT_URL
 

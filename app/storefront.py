@@ -44,6 +44,10 @@ def setup_storefront(event_data, fourthwall_results=None):
         print(f"  Setting shop name to: {target_name}")
         name_updated = _update_shop_name(shop_domain, target_name)
 
+        # Disable password wall so storefront is publicly accessible
+        print("  Disabling password protection...")
+        _disable_password_wall(shop_domain)
+
         # Ensure products are visible by checking the storefront page
         print("  Verifying products on storefront...")
         _verify_storefront_products(shop_domain)
@@ -180,6 +184,73 @@ def _update_shop_name(shop_domain, target_name):
     else:
         print("    Name filled but no save button found")
         return False
+
+
+def _disable_password_wall(shop_domain):
+    """Navigate to Fourthwall storefront settings and disable the password/coming-soon page."""
+    # The password wall is typically under the online store / storefront settings
+    settings_url = f"https://{shop_domain}.fourthwall.com/admin/dashboard/settings/"
+    _pw("goto", settings_url)
+    time.sleep(5)
+
+    snap = _snapshot()
+
+    # Look for password-related toggle, checkbox, or link
+    # Fourthwall may have a "Password protection" or "Coming soon" toggle
+    password_ref = (
+        _find_ref(snap, "password")
+        or _find_ref(snap, "coming soon")
+        or _find_ref(snap, "password protection")
+        or _find_ref(snap, "enable password")
+    )
+
+    if password_ref:
+        # Check if it's a toggle/checkbox that needs to be unchecked
+        _pw("click", password_ref)
+        time.sleep(2)
+        snap = _snapshot()
+
+        # Look for save button
+        save_ref = _find_ref(snap, "save", "button") or _find_ref(snap, "save")
+        if save_ref:
+            _pw("click", save_ref)
+            time.sleep(3)
+        print("    Password protection toggled")
+    else:
+        # Try navigating to the online store settings specifically
+        store_settings_url = f"https://{shop_domain}.fourthwall.com/admin/dashboard/settings/online-store"
+        _pw("goto", store_settings_url)
+        time.sleep(5)
+        snap = _snapshot()
+
+        password_ref = (
+            _find_ref(snap, "password")
+            or _find_ref(snap, "coming soon")
+            or _find_ref(snap, "password protection")
+        )
+        if password_ref:
+            _pw("click", password_ref)
+            time.sleep(2)
+            snap = _snapshot()
+            save_ref = _find_ref(snap, "save", "button") or _find_ref(snap, "save")
+            if save_ref:
+                _pw("click", save_ref)
+                time.sleep(3)
+            print("    Password protection toggled (online store settings)")
+        else:
+            print("    WARNING: Could not find password protection setting")
+
+    # Verify the storefront is now accessible without password redirect
+    storefront_url = f"https://{shop_domain}.fourthwall.com"
+    try:
+        resp = requests.get(storefront_url, timeout=15, allow_redirects=True)
+        final_url = str(resp.url)
+        if "/password" in final_url:
+            print(f"    WARNING: Storefront still behind password wall: {final_url}")
+        else:
+            print(f"    Storefront accessible: {final_url}")
+    except Exception as e:
+        print(f"    Could not verify storefront: {e}")
 
 
 def _verify_storefront_products(shop_domain):

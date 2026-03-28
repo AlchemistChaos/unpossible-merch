@@ -1,20 +1,21 @@
 # Ralph Agent Instructions
 
-You are an autonomous coding agent building "Unpossible Merch" — an AI agent that scrapes Luma event data, generates t-shirt design briefs, self-critiques them, and creates designs using Gemini image generation.
+You are an autonomous coding agent building "Unpossible Merch" — an AI agent that scrapes Luma event data, generates t-shirt design briefs, self-critiques them, creates designs using Gemini image generation, uploads them to Fourthwall as t-shirt products, sets up a storefront, and sends a blast to Luma attendees with the store link.
 
 ## Project Context
 
 - This is a **fast hackathon prototype** (Ralphthon SF 2026) - prioritize working code over perfection
-- Pipeline: scrape event → generate 10 briefs → self-critique to 6 → generate images
+- Pipeline: scrape event → generate 10 briefs → self-critique to 6 → generate images → upload to Fourthwall → setup storefront → blast Luma attendees
 - CLI-based (no web UI needed)
 - Uses W&B Weave for observability
 - Uses playwright-cli for web scraping (installed globally)
 - Keep dependencies minimal, code simple
-- See `docs/design-doc.md` for the full design document
+- See `docs/superpowers/specs/2026-03-28-unpossible-merch-agent-design.md` for the full design document
 
 ## Your Task (ONE iteration)
 
-1. Read `prd.json` in the project root
+0. **FIRST ITERATION ONLY:** If the user stories in `prd.json` lack detailed task breakdowns, read the design doc at `docs/superpowers/specs/2026-03-28-unpossible-merch-agent-design.md` and update `prd.json` to add concrete tasks, dependencies, and risks to each story. `prd.json` is the single source of truth for the implementation plan — do NOT create a separate plan document. Commit as `docs: enrich prd.json with detailed task breakdowns from design doc`. Then continue to step 1.
+1. Read `prd.json` in the project root — this IS the implementation plan (user stories, acceptance criteria, priorities, and task breakdowns are all here)
 2. Read `progress.txt` (check Codebase Patterns section first)
 3. Check you're on the correct branch from PRD `branchName`. If not, create it from main.
 4. Pick the **highest priority** user story where `passes: false`
@@ -38,7 +39,7 @@ You are an autonomous coding agent building "Unpossible Merch" — an AI agent t
 
 - Python 3.10+
 - Virtual environment at `venv/` (create if missing, activate before running)
-- API keys in `.env` file (GOOGLE_API_KEY, WANDB_API_KEY, PLATFORM_EMAIL, PLATFORM_PASSWORD)
+- API keys in `.env` file (GOOGLE_API_KEY, WANDB_API_KEY, PLATFORM_EMAIL, PLATFORM_PASSWORD, FOURTHWALL_API_USERNAME, FOURTHWALL_API_PASSWORD)
 - Mock event data in `data/events.json` (fallback)
 - Luma event URL in `.env` as LUMA_EVENT_URL
 - Output goes to `output/` directory
@@ -105,6 +106,44 @@ for part in response.parts:
         image.save("output/design.png")
 ```
 
+### Fourthwall (for merchandise / storefront)
+
+**API (read-only verification):**
+```python
+import requests
+# Basic Auth with FOURTHWALL_API_USERNAME + FOURTHWALL_API_PASSWORD
+response = requests.get(
+    'https://api.fourthwall.com/open-api/v1.0/shops/current',
+    auth=(os.environ['FOURTHWALL_API_USERNAME'], os.environ['FOURTHWALL_API_PASSWORD'])
+)
+# List products
+response = requests.get(
+    'https://api.fourthwall.com/open-api/v1.0/products',
+    auth=(os.environ['FOURTHWALL_API_USERNAME'], os.environ['FOURTHWALL_API_PASSWORD'])
+)
+```
+
+**Product creation (browser automation — API doesn't support creating products):**
+```python
+# Use playwright-cli to automate Fourthwall UI
+subprocess.run(['playwright-cli', 'open', 'https://fourthwall.com/login'], capture_output=True, text=True)
+# Log in with PLATFORM_EMAIL + PLATFORM_PASSWORD
+# Navigate to product creation, upload design image, set details, publish
+```
+
+### Luma (for sending blasts to attendees)
+
+**Blast sending (browser automation — no API endpoint for blasts):**
+```python
+# Use playwright-cli to automate Luma blast UI
+subprocess.run(['playwright-cli', 'open', 'https://luma.com/login'], capture_output=True, text=True)
+# Log in with PLATFORM_EMAIL + PLATFORM_PASSWORD (agent is cohost)
+# Navigate to event > Manage Event > Blasts
+# Compose blast with storefront URL, send to all "Going" attendees
+```
+
+Blasts are delivered via email + SMS + push notifications.
+
 ### Weave (for observability)
 ```python
 import weave
@@ -123,7 +162,7 @@ When generating briefs, use these categories:
 - **funny-meme**: Ralph Wiggum references, lobster costume jokes, "don't touch your laptop" humor, AI agent jokes
 - **sponsor-logo**: NASCAR-style with sponsor names (OpenAI, W&B, Naver D2SF, Kakao Ventures, etc.) as creative typography (NOT actual logos)
 
-All designs should be **black and white**, print-ready, high contrast.
+All designs should be **black ink on transparent background**, print-ready, high contrast. The image is ONLY the graphic/logo — NOT a t-shirt mockup, NOT a person wearing a shirt. Fourthwall places the graphic onto their own t-shirt templates. When uploading to Fourthwall, select the WHITE t-shirt. See the `tshirt-image-gen` skill for detailed prompt guidance and comedy personas.
 
 ## Checkpoint System
 
@@ -132,6 +171,9 @@ Each pipeline stage should save output to `checkpoints/`:
 - `checkpoints/02-briefs.json`
 - `checkpoints/03-selected-briefs.json`
 - `checkpoints/04-images.json`
+- `checkpoints/05-fourthwall-products.json`
+- `checkpoints/06-storefront.json`
+- `checkpoints/07-luma-blast.json`
 
 On restart, check for existing checkpoints and skip completed stages.
 
