@@ -47,3 +47,16 @@ Started: 2026-03-28
   - LLM may wrap JSON in markdown code blocks even when told not to — strip those too
   - Category distribution is approximate since LLM output is non-deterministic
 ---
+
+## 2026-03-28 - US-004
+- Created `app/critique.py` with `critique_briefs(briefs)` function
+- Uses W&B Inference API (OpenAI client) with same Qwen3 model for self-critique
+- Evaluates briefs against: printability, relevance, variety, humor/appeal
+- Selects top 6 briefs, adds `critique_notes` field to each
+- Handles LLM returning more/fewer than 6 results gracefully
+- Files changed: `app/critique.py`, `prd.json`, `progress.txt`
+- **Learnings:**
+  - Same Qwen3 output parsing pattern (think tags + code blocks) reused from briefs.py
+  - LLM generally respects "select 6" instruction but safety net for count adjustment is useful
+  - Category distribution in final 6 is quality-driven, not strictly enforced
+---

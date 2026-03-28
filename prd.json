@@ -64,7 +64,7 @@
         "Test: python -c 'from app.critique import critique_briefs; ...'"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "This is the self-critique loop from the design doc. Feed all 10 briefs to the LLM and ask it to rank and select 6."
     },
     {
