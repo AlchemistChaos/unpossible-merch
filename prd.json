@@ -49,7 +49,7 @@
         "Test with scraped or mock event data"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "Use model 'OpenPipe/Qwen3-14B-Instruct' via W&B Inference. Prompt should ask for JSON output. Sponsor names as text only (no logos). All designs black and white."
     },
     {

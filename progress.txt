@@ -7,6 +7,8 @@ Started: 2026-03-28
 - Python 3.9 is installed (not 3.10+), generates FutureWarning from google-auth — safe to ignore
 - playwright-cli eval returns JSON-escaped string wrapped in markdown code blocks — use `_clean_eval_output()` to parse
 - Scrape fallback: if playwright fails, load from `data/events.json`
+- Qwen3 LLM output: strip `<think>` tags and markdown code blocks before JSON parsing
+- W&B Inference client: `OpenAI(base_url='https://api.inference.wandb.ai/v1', api_key=WANDB_API_KEY)`
 
 ---
 
@@ -31,4 +33,17 @@ Started: 2026-03-28
   - Page text has zero-width spaces (`\u200b`) and non-breaking spaces (`\u00a0`) — must strip
   - Date format on Luma: "Monday 30 March 12:30 - 31 Mar, 13:30" (weekday first, no "AM/PM" always)
   - Location may be hidden ("Register to See Address") for private events
+---
+
+## 2026-03-28 - US-003
+- Created `app/briefs.py` with `generate_briefs(event_data)` function
+- Uses W&B Inference API (OpenAI client) with `OpenPipe/Qwen3-14B-Instruct` model
+- Generates 10 briefs with fields: id, title, category, description, slogans, color_notes
+- Prompt requests 4 crisp-simple, 4 funny-meme, 2 sponsor-logo distribution
+- Handles Qwen3 `<think>` tags and markdown code blocks in LLM output parsing
+- Files changed: `app/briefs.py`, `prd.json`
+- **Learnings:**
+  - Qwen3 models emit `<think>` tags before JSON — must strip them in `_parse_briefs()`
+  - LLM may wrap JSON in markdown code blocks even when told not to — strip those too
+  - Category distribution is approximate since LLM output is non-deterministic
 ---
