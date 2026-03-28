@@ -16,6 +16,8 @@ Started: 2026-03-28
 - Fourthwall shop domain can be fetched via GET /open-api/v1.0/shops/current → `domain` field
 - Fourthwall admin settings URL: `/admin/dashboard/settings/` (NOT `/admin/settings/general`)
 - Fourthwall settings fields: "Creator name" and "Site title" textboxes, "Save" button
+- Luma sign-in URL: `lu.ma/signin` — normalize event URLs from `luma.com` to `lu.ma` for manage pages
+- Luma blast manage URL: `{event_url}/manage/blasts` — direct navigation works when logged in as cohost
 
 ---
 
@@ -124,4 +126,21 @@ Started: 2026-03-28
   - Settings page has "Creator name" and "Site title" textboxes with a "Save" button
   - Storefront redirects to `/password` page (password-protected) but still returns HTTP 200
   - Can import `_pw`, `_snapshot`, `_login` etc. from fourthwall.py to avoid duplicating helpers
+---
+
+## 2026-03-28 - US-008
+- Created `app/luma_blast.py` with `send_blast(event_url, storefront_url)` function
+- Uses playwright-cli browser automation: login to Luma → navigate to event blasts → compose → send
+- Reuses playwright-cli helpers from `app/fourthwall.py` (_pw, _snapshot, _find_ref, _find_all_refs, _current_url)
+- Luma login flow: open lu.ma/signin → fill email → continue → fill password → log in
+- Navigate to blasts via direct URL: `{event_url}/manage/blasts`
+- Blast message includes storefront URL, targets all "Going" attendees
+- Added Stage 7 to `app/pipeline.py` with checkpoint `07-luma-blast.json`
+- Successfully sent blast to event attendees
+- Files changed: `app/luma_blast.py` (new), `app/pipeline.py`, `prd.json`, `progress.txt`
+- **Learnings:**
+  - Luma sign-in URL is `lu.ma/signin` (not `luma.com/login`)
+  - Luma event URLs work with both `luma.com` and `lu.ma` — normalize to `lu.ma` for manage pages
+  - Blast manage URL pattern: `{event_url}/manage/blasts` — direct navigation works
+  - Luma blast editor may use contenteditable divs rather than standard textbox inputs
 ---

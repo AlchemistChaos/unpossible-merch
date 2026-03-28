@@ -133,7 +133,7 @@
         "Test: blast is sent successfully (verify via Luma UI or confirmation message)"
       ],
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "notes": "Luma API (https://public-api.luma.com) does not have a blast endpoint. Must use browser automation. The agent is a cohost on the event so has permissions to send blasts. Blast goes to all attendees via email + SMS + push."
     },
     {

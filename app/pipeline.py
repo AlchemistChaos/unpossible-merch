@@ -9,6 +9,7 @@ from app.critique import critique_briefs
 from app.design import generate_all_designs
 from app.fourthwall import upload_designs
 from app.storefront import setup_storefront
+from app.luma_blast import send_blast
 from app.config import LUMA_EVENT_URL
 
 
@@ -86,6 +87,17 @@ def run_pipeline(event_url=None, clean=False):
         label="storefront setup",
     )
 
+    # Stage 7: Send Luma blast
+    print("\n" + "=" * 50)
+    print("STAGE 7: Send Luma Blast to Attendees")
+    print("=" * 50)
+    storefront_url = storefront.get("storefront_url", "")
+    blast = _run_stage(
+        checkpoint="07-luma-blast.json",
+        fn=lambda: send_blast(url, storefront_url),
+        label="Luma blast",
+    )
+
     # Save results summary
     results = {
         "timestamp": datetime.now().isoformat(),
@@ -100,6 +112,8 @@ def run_pipeline(event_url=None, clean=False):
         "fourthwall_failed": fourthwall.get("failed", 0),
         "storefront_url": storefront.get("storefront_url", ""),
         "storefront_accessible": storefront.get("storefront_accessible", {}).get("status", "unknown"),
+        "blast_status": blast.get("status", "unknown"),
+        "blast_details": blast.get("blast_details", {}),
     }
     results_path = os.path.join(OUTPUT_DIR, "results.json")
     with open(results_path, "w") as f:
@@ -118,6 +132,7 @@ def run_pipeline(event_url=None, clean=False):
     print(f"Fourthwall failed: {results['fourthwall_failed']}")
     print(f"Storefront URL: {results['storefront_url']}")
     print(f"Storefront accessible: {results['storefront_accessible']}")
+    print(f"Blast status: {results['blast_status']}")
     print(f"Results saved to: {results_path}")
 
     return results
