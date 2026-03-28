@@ -80,13 +80,14 @@ TEXT ON DESIGN: {slogans}
 
 CRITICAL REQUIREMENTS:
 - This is ONLY the graphic/logo — NOT a t-shirt mockup, NOT a person wearing a shirt
-- Black ink only on a completely transparent/blank background
-- PNG format, no background color at all
+- Black and white ONLY — no color, no grayscale gradients
+- White background with black design elements
 - High contrast, clean bold lines suitable for screen printing
-- Bold, readable typography — text must be legible at t-shirt scale
+- Bold, readable typography — text must be legible and not garbled
+- MUST include an illustrated graphic element (character, icon, drawing), not just text
 - Centered composition, standalone graphic
 - Illustration/graphic style only — no photographic elements
-- Funny, clever, the kind of design that makes people laugh and want to wear it
+- The design should appear ONCE, not duplicated or mirrored
 
 COMEDY STYLE: {style}"""
 

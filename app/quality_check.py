@@ -27,9 +27,9 @@ DESIGN BRIEF:
 
 CRITERIA (score each pass/fail):
 1. GRAPHIC ONLY: This is JUST the logo/graphic — NOT a t-shirt mockup, NOT a person wearing a shirt, NO fabric texture visible
-2. TRANSPARENT BACKGROUND: Background is transparent or plain white (no gradients, no texture, no scene)
-3. TEXT READABLE: Any text in the design is legible and not garbled or duplicated
-4. BLACK INK ONLY: Design uses only black (no color, no gray gradients)
+2. CLEAN BACKGROUND: Background is plain white (no checkerboard patterns, no gradients, no texture)
+3. TEXT READABLE: Any text in the design is legible, correctly spelled, and not garbled or duplicated
+4. BLACK AND WHITE: Design uses only black and white (no color, no gray gradients)
 5. NOT DUPLICATED: The graphic appears once, not repeated/mirrored side by side
 6. HAS ILLUSTRATION: Contains at least one illustrated graphic element (icon, character, drawing) — not just plain text
 7. FUNNY: The design is genuinely humorous — would someone actually want to wear this?
@@ -92,8 +92,8 @@ TEXT ON DESIGN: {slogan_text}
 
 CRITICAL REQUIREMENTS:
 - This is ONLY the graphic/logo — NOT a t-shirt mockup, NOT a person wearing a shirt
-- Black ink only on a completely transparent/blank background
-- PNG format, no background color at all
+- Black and white ONLY — no color, no grayscale gradients
+- White background with black design elements
 - High contrast, clean bold lines suitable for screen printing
 - Bold, readable typography — text must be legible at t-shirt scale
 - Centered composition, standalone graphic — appears ONCE, not duplicated

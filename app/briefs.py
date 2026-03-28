@@ -1,9 +1,20 @@
 import json
+import re
 
 import weave
 from openai import OpenAI
 
 from app.config import WANDB_API_KEY
+
+
+def _clean_llm_output(text):
+    """Strip <think> tags and markdown code blocks from Qwen3 output."""
+    text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
+    text = text.strip()
+    code_match = re.search(r"```(?:json)?\s*\n?(.*?)```", text, re.DOTALL)
+    if code_match:
+        text = code_match.group(1)
+    return text.strip()
 
 
 @weave.op()
@@ -18,13 +29,10 @@ def generate_briefs(event_data):
 
     response = client.chat.completions.create(
         model="OpenPipe/Qwen3-14B-Instruct",
-        messages=[
-            {"role": "system", "content": "You are a creative t-shirt designer for tech hackathons. Return ONLY valid JSON, no other text."},
-            {"role": "user", "content": prompt},
-        ],
+        messages=[{"role": "user", "content": prompt}],
     )
 
-    raw = response.choices[0].message.content.strip()
+    raw = _clean_llm_output(response.choices[0].message.content)
     briefs = _parse_briefs(raw)
     return briefs
 
@@ -37,6 +45,7 @@ def _build_prompt(event_data):
     sponsors = event_data.get("sponsors", [])
     tags = event_data.get("tags", [])
     speakers = event_data.get("speakers", [])
+    judges = event_data.get("judges", [])
 
     return f"""Generate exactly 10 t-shirt design briefs for the hackathon event below. These should be GENUINELY FUNNY — the kind of design that makes someone laugh and actually want to wear it.
 
@@ -46,6 +55,7 @@ EVENT DETAILS:
 - Description: {description}
 - Sponsors: {', '.join(sponsors)}
 - Speakers: {', '.join(speakers[:5])}
+- Judges: {', '.join(judges[:5])}
 - Tags: {', '.join(tags)}
 
 KEY EVENT HUMOR SOURCE MATERIAL:
@@ -72,47 +82,27 @@ CATEGORIES — each has a distinct comedy voice:
   Examples: "Raised $50M to let a robot write code I could've copy-pasted" / Sponsor names as fake VC-funded products
 
 DESIGN CONSTRAINTS:
-- All designs are BLACK INK ONLY on transparent background
+- All designs are BLACK AND WHITE only, high contrast, print-ready
+- White background with black design elements
 - The image is JUST the graphic/logo — NOT a t-shirt mockup, NOT a person wearing a shirt
-- Must be print-ready, high contrast, screen-print style
+- MUST include illustrated graphic elements (characters, icons, drawings) — not just plain text
+- Be specific about visual layout and typography style
 - Slogans should be short, punchy, and funny enough that someone would actually wear it in public
 
 Return a JSON array of exactly 10 objects, each with these fields:
 - "id": string like "brief-01" through "brief-10"
-- "title": short title for the design
+- "title": short creative title for the design
 - "category": one of "crisp-simple", "funny-meme", "sponsor-logo"
-- "description": 2-3 sentence description of the visual design concept. Describe the GRAPHIC only, not a t-shirt.
-- "slogans": array of 1-3 slogan strings for the design
-- "color_notes": always "Black ink on transparent background"
+- "description": detailed description of the visual design (2-3 sentences). Describe the GRAPHIC only, not a t-shirt. Be specific about visual layout and what illustrated elements to include.
+- "slogans": array of 2-3 slogan strings for the design
+- "color_notes": "Black and white, high contrast"
 
-Return ONLY the JSON array, no markdown formatting, no code blocks, no explanation."""
+Return ONLY the JSON array, no other text."""
 
 
 def _parse_briefs(raw_text):
     """Parse the LLM response into a list of brief dicts."""
-    text = raw_text.strip()
-
-    # Strip markdown code blocks if present
-    if text.startswith("```"):
-        lines = text.split("\n")
-        # Remove first and last lines (``` markers)
-        lines = [l for l in lines if not l.strip().startswith("```")]
-        text = "\n".join(lines).strip()
-
-    # Handle think tags from Qwen models
-    if "<think>" in text:
-        # Extract content after </think>
-        think_end = text.find("</think>")
-        if think_end != -1:
-            text = text[think_end + len("</think>"):].strip()
-
-    # Strip markdown code blocks again (may appear after think tags)
-    if text.startswith("```"):
-        lines = text.split("\n")
-        lines = [l for l in lines if not l.strip().startswith("```")]
-        text = "\n".join(lines).strip()
-
-    briefs = json.loads(text)
+    briefs = json.loads(raw_text)
 
     if not isinstance(briefs, list):
         raise ValueError(f"Expected a list, got {type(briefs)}")
