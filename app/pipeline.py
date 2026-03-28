@@ -21,7 +21,7 @@ OUTPUT_DIR = "output"
 
 
 @weave.op()
-def run_pipeline(event_url=None, clean=False):
+def run_pipeline(event_url=None, clean=False, mock=False, skip_blast=False):
     """Run the full t-shirt design pipeline with checkpoint recovery."""
     if clean:
         _clean_checkpoints()
@@ -31,103 +31,165 @@ def run_pipeline(event_url=None, clean=False):
 
     url = event_url or LUMA_EVENT_URL
     session_id = str(uuid.uuid4())[:8]
+    errors = []
+    stages_completed = 0
 
     # Stage 1: Scrape event data
     print("=" * 50)
     print("STAGE 1: Scrape Event Data")
     print("=" * 50)
-    event_data = _run_stage(
-        checkpoint="01-event-data.json",
-        fn=lambda: scrape_event(url),
-        label="event scraping",
-    )
+    if mock:
+        event_data = _run_stage(
+            checkpoint="01-event-data.json",
+            fn=lambda: _load_mock_event(),
+            label="loading mock data",
+        )
+    else:
+        try:
+            event_data = _run_stage(
+                checkpoint="01-event-data.json",
+                fn=lambda: scrape_event(url),
+                label="event scraping",
+            )
+        except Exception as e:
+            print(f"  ERROR: Stage 1 failed: {e}")
+            errors.append(f"Stage 1 (scrape): {e}")
+            event_data = _load_mock_event()
+            print("  Falling back to mock data")
+    stages_completed += 1
 
     event_name = event_data.get("name", "Unknown")
     print(f"  Session: {session_id} | Event: {event_name}")
 
     with weave.attributes({"session_id": session_id, "event_name": event_name, "event_url": url}):
-        return _run_remaining_stages(url, event_data, event_name)
+        # Stage 2: Generate 10 briefs
+        print("\n" + "=" * 50)
+        print("STAGE 2: Generate 10 Design Briefs")
+        print("=" * 50)
+        briefs = None
+        try:
+            briefs = _run_stage(
+                checkpoint="02-briefs.json",
+                fn=lambda: generate_briefs(event_data),
+                label="brief generation",
+            )
+            stages_completed += 1
+        except Exception as e:
+            print(f"  ERROR: Stage 2 failed: {e}")
+            errors.append(f"Stage 2 (briefs): {e}")
 
+        # Stage 3: Critique and select 6
+        selected = None
+        if briefs:
+            print("\n" + "=" * 50)
+            print("STAGE 3: Self-Critique -> Select 6 Briefs")
+            print("=" * 50)
+            try:
+                selected = _run_stage(
+                    checkpoint="03-selected-briefs.json",
+                    fn=lambda: critique_briefs(briefs),
+                    label="brief critique",
+                )
+                stages_completed += 1
+            except Exception as e:
+                print(f"  ERROR: Stage 3 failed: {e}")
+                errors.append(f"Stage 3 (critique): {e}")
 
-def _run_remaining_stages(url, event_data, event_name):
-    """Run stages 2-7 inside weave.attributes context."""
-    # Stage 2: Generate 10 briefs
-    print("\n" + "=" * 50)
-    print("STAGE 2: Generate 10 Design Briefs")
-    print("=" * 50)
-    briefs = _run_stage(
-        checkpoint="02-briefs.json",
-        fn=lambda: generate_briefs(event_data),
-        label="brief generation",
-    )
+        # Stage 4: Generate images
+        images = None
+        if selected:
+            print("\n" + "=" * 50)
+            print("STAGE 4: Generate T-Shirt Designs")
+            print("=" * 50)
+            try:
+                images = _run_stage(
+                    checkpoint="04-images.json",
+                    fn=lambda: generate_all_designs(selected),
+                    label="image generation",
+                )
+                stages_completed += 1
+            except Exception as e:
+                print(f"  ERROR: Stage 4 failed: {e}")
+                errors.append(f"Stage 4 (images): {e}")
 
-    # Stage 3: Critique and select 6
-    print("\n" + "=" * 50)
-    print("STAGE 3: Self-Critique → Select 6 Briefs")
-    print("=" * 50)
-    selected = _run_stage(
-        checkpoint="03-selected-briefs.json",
-        fn=lambda: critique_briefs(briefs),
-        label="brief critique",
-    )
+        # Stage 5: Upload to Fourthwall
+        fourthwall = None
+        if selected and images:
+            print("\n" + "=" * 50)
+            print("STAGE 5: Upload Designs to Fourthwall")
+            print("=" * 50)
+            try:
+                fourthwall = _run_stage(
+                    checkpoint="05-fourthwall-products.json",
+                    fn=lambda: upload_designs(selected, images),
+                    label="Fourthwall upload",
+                )
+                stages_completed += 1
+            except Exception as e:
+                print(f"  ERROR: Stage 5 failed: {e}")
+                errors.append(f"Stage 5 (Fourthwall): {e}")
 
-    # Stage 4: Generate images
-    print("\n" + "=" * 50)
-    print("STAGE 4: Generate T-Shirt Designs")
-    print("=" * 50)
-    images = _run_stage(
-        checkpoint="04-images.json",
-        fn=lambda: generate_all_designs(selected),
-        label="image generation",
-    )
+        # Stage 6: Configure storefront
+        storefront = None
+        if fourthwall:
+            print("\n" + "=" * 50)
+            print("STAGE 6: Configure Fourthwall Storefront")
+            print("=" * 50)
+            try:
+                storefront = _run_stage(
+                    checkpoint="06-storefront.json",
+                    fn=lambda: setup_storefront(event_data, fourthwall),
+                    label="storefront setup",
+                )
+                stages_completed += 1
+            except Exception as e:
+                print(f"  ERROR: Stage 6 failed: {e}")
+                errors.append(f"Stage 6 (storefront): {e}")
 
-    # Stage 5: Upload to Fourthwall
-    print("\n" + "=" * 50)
-    print("STAGE 5: Upload Designs to Fourthwall")
-    print("=" * 50)
-    fourthwall = _run_stage(
-        checkpoint="05-fourthwall-products.json",
-        fn=lambda: upload_designs(selected, images),
-        label="Fourthwall upload",
-    )
-
-    # Stage 6: Configure storefront
-    print("\n" + "=" * 50)
-    print("STAGE 6: Configure Fourthwall Storefront")
-    print("=" * 50)
-    storefront = _run_stage(
-        checkpoint="06-storefront.json",
-        fn=lambda: setup_storefront(event_data, fourthwall),
-        label="storefront setup",
-    )
-
-    # Stage 7: Send Luma blast
-    print("\n" + "=" * 50)
-    print("STAGE 7: Send Luma Blast to Attendees")
-    print("=" * 50)
-    storefront_url = storefront.get("storefront_url", "")
-    blast = _run_stage(
-        checkpoint="07-luma-blast.json",
-        fn=lambda: send_blast(url, storefront_url),
-        label="Luma blast",
-    )
+        # Stage 7: Send Luma blast
+        blast = None
+        if skip_blast:
+            print("\n" + "=" * 50)
+            print("STAGE 7: Send Luma Blast (SKIPPED)")
+            print("=" * 50)
+            blast = {"status": "skipped"}
+        elif storefront:
+            print("\n" + "=" * 50)
+            print("STAGE 7: Send Luma Blast to Attendees")
+            print("=" * 50)
+            storefront_url = storefront.get("storefront_url", "")
+            try:
+                blast = _run_stage(
+                    checkpoint="07-luma-blast.json",
+                    fn=lambda: send_blast(url, storefront_url),
+                    label="Luma blast",
+                )
+                stages_completed += 1
+            except Exception as e:
+                print(f"  ERROR: Stage 7 failed: {e}")
+                errors.append(f"Stage 7 (blast): {e}")
 
     # Save results summary
     results = {
         "timestamp": datetime.now().isoformat(),
         "event_url": url,
-        "event_name": event_data.get("name", "Unknown"),
-        "total_briefs_generated": len(briefs),
-        "briefs_selected": len(selected),
-        "images_generated": sum(1 for img in images if img.get("status") == "success"),
-        "images_failed": sum(1 for img in images if img.get("status") != "success"),
-        "image_results": images,
-        "fourthwall_products": fourthwall.get("successful", 0),
-        "fourthwall_failed": fourthwall.get("failed", 0),
-        "storefront_url": storefront.get("storefront_url", ""),
-        "storefront_accessible": storefront.get("storefront_accessible", {}).get("status", "unknown"),
-        "blast_status": blast.get("status", "unknown"),
-        "blast_details": blast.get("blast_details", {}),
+        "event_name": event_name,
+        "stages_completed": stages_completed,
+        "total_stages": 7,
+        "total_briefs_generated": len(briefs) if briefs else 0,
+        "briefs_selected": len(selected) if selected else 0,
+        "images_generated": sum(1 for img in (images or []) if img.get("status") == "success"),
+        "images_failed": sum(1 for img in (images or []) if img.get("status") != "success"),
+        "image_results": images or [],
+        "fourthwall_products": (fourthwall or {}).get("successful", 0),
+        "fourthwall_failed": (fourthwall or {}).get("failed", 0),
+        "storefront_url": (storefront or {}).get("storefront_url", ""),
+        "storefront_accessible": (storefront or {}).get("storefront_accessible", {}).get("status", "unknown"),
+        "blast_status": (blast or {}).get("status", "unknown"),
+        "blast_details": (blast or {}).get("blast_details", {}),
+        "errors": errors,
+        "mock": mock,
+        "skip_blast": skip_blast,
     }
     results_path = os.path.join(OUTPUT_DIR, "results.json")
     with open(results_path, "w") as f:
@@ -135,9 +197,10 @@ def _run_remaining_stages(url, event_data, event_name):
 
     # Print summary
     print("\n" + "=" * 50)
-    print("PIPELINE COMPLETE")
+    print("PIPELINE SUMMARY")
     print("=" * 50)
     print(f"Event: {results['event_name']}")
+    print(f"Stages completed: {results['stages_completed']}/{results['total_stages']}")
     print(f"Briefs generated: {results['total_briefs_generated']}")
     print(f"Briefs selected: {results['briefs_selected']}")
     print(f"Images generated: {results['images_generated']}")
@@ -146,10 +209,26 @@ def _run_remaining_stages(url, event_data, event_name):
     print(f"Fourthwall failed: {results['fourthwall_failed']}")
     print(f"Storefront URL: {results['storefront_url']}")
     print(f"Storefront accessible: {results['storefront_accessible']}")
-    print(f"Blast status: {results['blast_status']}")
+    print(f"Blast sent: {results['blast_status']}")
+    if errors:
+        print(f"Errors ({len(errors)}):")
+        for err in errors:
+            print(f"  - {err}")
+    else:
+        print("Errors: none")
     print(f"Results saved to: {results_path}")
 
     return results
+
+
+def _load_mock_event():
+    """Load mock event data from data/events.json."""
+    fallback_path = "data/events.json"
+    if os.path.exists(fallback_path):
+        with open(fallback_path) as f:
+            events = json.load(f)
+        return events[0] if events else {}
+    return {"name": "Ralphthon SF 2026", "description": "AI agent hackathon", "sponsors": []}
 
 
 def _run_stage(checkpoint, fn, label):
@@ -157,16 +236,16 @@ def _run_stage(checkpoint, fn, label):
     cp_path = os.path.join(CHECKPOINTS_DIR, checkpoint)
 
     if os.path.exists(cp_path):
-        print(f"  ✓ Loading from checkpoint: {checkpoint}")
+        print(f"  Loading from checkpoint: {checkpoint}")
         with open(cp_path) as f:
             return json.load(f)
 
-    print(f"  → Running {label}...")
+    print(f"  Running {label}...")
     result = fn()
 
     with open(cp_path, "w") as f:
         json.dump(result, f, indent=2)
-    print(f"  ✓ Saved checkpoint: {checkpoint}")
+    print(f"  Saved checkpoint: {checkpoint}")
 
     return result
 

@@ -184,7 +184,7 @@
         "Test: python run.py --mock --skip-blast"
       ],
       "priority": 11,
-      "passes": false,
+      "passes": true,
       "notes": "This is polish for demo. Keep it simple. The --mock and --skip-blast flags are important for testing without side effects."
     },
     {

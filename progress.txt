@@ -171,3 +171,19 @@ Started: 2026-03-28
   - `load_dotenv()` in config.py makes WANDB_API_KEY available for weave.init via import chain
   - Weave autopatches OpenAI client calls — no extra work needed for W&B Inference tracing
 ---
+
+## 2026-03-28 - US-011
+- Added error handling: each pipeline stage wrapped in try/except with clear error messages
+- Added CLI flags: `--event-url`, `--mock`, `--skip-blast`
+- `--mock` loads from `data/events.json` instead of scraping
+- `--skip-blast` skips stage 7 (Luma blast) — returns `{"status": "skipped"}`
+- Pipeline continues if upstream stages fail (using conditional checks on stage results)
+- Per-item error handling already existed: `design.py` retries per brief, `fourthwall.py` catches per product
+- Summary printed at end: stages completed, designs, products, blast status, errors list
+- Tested: `python run.py --mock --skip-blast` — ran all stages, 6/7 completed (blast skipped)
+- Files changed: `run.py`, `app/pipeline.py`, `prd.json`
+- **Learnings:**
+  - Fourthwall product creation failed on re-run (product template page changed state from prior uploads)
+  - Checkpoint loading for stages 1-4 works correctly — skips API calls on restart
+  - `_load_mock_event()` helper keeps mock data fallback centralized in pipeline.py
+---
