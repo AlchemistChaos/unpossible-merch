@@ -39,38 +39,41 @@ def upload_designs(selected_briefs, image_results):
             image_map[img["brief_id"]] = img["file"]
 
     products = []
-    try:
-        print("  Logging in to Fourthwall...")
-        _login(shop_domain)
-        time.sleep(3)
+    for i, brief in enumerate(selected_briefs):
+        image_path = image_map.get(brief["id"])
+        if not image_path or not os.path.exists(image_path):
+            print(f"  Skipping {brief['id']}: no image available")
+            products.append({
+                "brief_id": brief["id"],
+                "status": "skipped",
+                "reason": "no_image",
+            })
+            continue
 
-        for i, brief in enumerate(selected_briefs):
-            image_path = image_map.get(brief["id"])
-            if not image_path or not os.path.exists(image_path):
-                print(f"  Skipping {brief['id']}: no image available")
-                products.append({
-                    "brief_id": brief["id"],
-                    "status": "skipped",
-                    "reason": "no_image",
-                })
-                continue
+        print(f"  Creating product {i + 1}/{len(selected_briefs)}: {brief['title']}")
+        try:
+            # Fresh browser session for each product to avoid stale state
+            print("    Logging in to Fourthwall...")
+            _login(shop_domain)
+            time.sleep(3)
 
-            print(f"  Creating product {i + 1}/{len(selected_briefs)}: {brief['title']}")
+            result = _create_product(brief, os.path.abspath(image_path), shop_domain)
+            products.append(result)
+            print(f"    -> {result['status']}")
+        except Exception as e:
+            print(f"    -> Failed: {e}")
+            products.append({
+                "brief_id": brief["id"],
+                "status": "error",
+                "error": str(e),
+            })
+        finally:
             try:
-                result = _create_product(brief, os.path.abspath(image_path), shop_domain)
-                products.append(result)
-                print(f"    -> {result['status']}")
-            except Exception as e:
-                print(f"    -> Failed: {e}")
-                products.append({
-                    "brief_id": brief["id"],
-                    "status": "error",
-                    "error": str(e),
-                })
+                _pw("close")
+            except Exception:
+                pass
 
-            time.sleep(2)
-    finally:
-        _pw("close")
+        time.sleep(2)
 
     # Verify via API
     api_check = _verify_products_via_api()
